@@ -181,19 +181,19 @@ export default function HistoryScreen() {
       <View style={styles.statsGrid}>
         <View style={styles.statCard}>
           <Text style={styles.statCardValue}>{stats.totalWorkouts}</Text>
-          <Text style={styles.statCardLabel}>Workouts</Text>
+          <Text style={styles.statCardLabel} numberOfLines={1}>WODs</Text>
         </View>
         <View style={styles.statCard}>
           <Text style={styles.statCardValue}>{stats.totalMinutes}</Text>
-          <Text style={styles.statCardLabel}>Minutes</Text>
+          <Text style={styles.statCardLabel} numberOfLines={1}>Mins</Text>
         </View>
         <View style={styles.statCard}>
           <Text style={styles.statCardValue}>{stats.totalCalories}</Text>
-          <Text style={styles.statCardLabel}>Calories</Text>
+          <Text style={styles.statCardLabel} numberOfLines={1}>Cals</Text>
         </View>
         <View style={styles.statCard}>
           <Text style={styles.statCardValue}>{stats.streak}</Text>
-          <Text style={styles.statCardLabel}>Day Streak</Text>
+          <Text style={styles.statCardLabel} numberOfLines={1}>Streak</Text>
         </View>
       </View>
 
