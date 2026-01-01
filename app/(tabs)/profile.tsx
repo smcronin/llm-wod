@@ -401,12 +401,31 @@ export default function ProfileScreen() {
                   </Text>
                 )}
               </View>
-              <TouchableOpacity
-                onPress={() => handleDeleteSet(set.id)}
-                style={styles.deleteButton}
-              >
-                <Ionicons name="trash-outline" size={18} color={colors.error} />
-              </TouchableOpacity>
+              <View style={styles.equipmentSetActions}>
+                <TouchableOpacity
+                  onPress={() => {
+                    router.push({
+                      pathname: '/modals/edit-equipment-set',
+                      params: {
+                        id: set.id,
+                        name: set.name,
+                        equipment: set.equipment.join(','),
+                        notes: set.notes || '',
+                        isDefault: set.isDefault ? 'true' : 'false',
+                      },
+                    });
+                  }}
+                  style={styles.actionButton}
+                >
+                  <Ionicons name="pencil" size={18} color={colors.primary} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => handleDeleteSet(set.id)}
+                  style={styles.actionButton}
+                >
+                  <Ionicons name="trash-outline" size={18} color={colors.error} />
+                </TouchableOpacity>
+              </View>
             </View>
           ))}
         </Card>
@@ -554,7 +573,12 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     marginTop: 4,
   },
-  deleteButton: {
+  equipmentSetActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  actionButton: {
     padding: spacing.sm,
   },
   dangerSection: {

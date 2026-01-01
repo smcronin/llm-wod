@@ -22,6 +22,12 @@ export default function RootLayout() {
             presentation: 'modal',
           }}
         />
+        <Stack.Screen
+          name="modals/edit-equipment-set"
+          options={{
+            presentation: 'modal',
+          }}
+        />
       </Stack>
     </View>
   );
