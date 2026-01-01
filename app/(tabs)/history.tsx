@@ -1,17 +1,28 @@
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Card, Chip } from '@/components/common';
 import { colors, spacing, typography, borderRadius } from '@/theme';
-import { useHistoryStore } from '@/stores';
+import { useHistoryStore, useWorkoutStore } from '@/stores';
 import { WorkoutSession } from '@/types/workout';
-import { formatDate, formatDuration } from '@/utils';
+import { formatDate, formatDuration, flattenWorkout } from '@/utils';
 import { DIFFICULTY_COLORS } from '@/utils/constants';
 
 export default function HistoryScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const history = useHistoryStore((state) => state.history);
+  const { setCurrentWorkout, setFlattenedWorkout } = useWorkoutStore();
+
+  const handleReplay = (session: WorkoutSession) => {
+    const workout = session.workout;
+    const flattened = flattenWorkout(workout);
+    setCurrentWorkout(workout);
+    setFlattenedWorkout(flattened);
+    router.push('/workout/review');
+  };
 
   const stats = {
     totalWorkouts: history.totalWorkoutsCompleted,
@@ -79,6 +90,15 @@ export default function HistoryScreen() {
             ))}
           </View>
         )}
+
+        <TouchableOpacity
+          style={styles.replayButton}
+          onPress={() => handleReplay(item)}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="refresh" size={16} color={colors.primary} />
+          <Text style={styles.replayButtonText}>Replay Workout</Text>
+        </TouchableOpacity>
       </Card>
     );
   };
@@ -253,6 +273,21 @@ const styles = StyleSheet.create({
     fontSize: typography.xs,
     color: colors.textMuted,
     textTransform: 'capitalize',
+  },
+  replayButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.md,
+    paddingVertical: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  replayButtonText: {
+    fontSize: typography.sm,
+    color: colors.primary,
+    fontWeight: typography.medium,
   },
   empty: {
     alignItems: 'center',

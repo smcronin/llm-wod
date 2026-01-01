@@ -54,6 +54,14 @@ export default function TimerScreen() {
   const progress = items.length > 0 ? (currentItemIndex + 1) / items.length : 0;
   const isRest = currentItem ? isRestItem(currentItem.type) : false;
 
+  // Side-switching logic
+  const hasSideSwitching = currentItem?.exercise?.switchSides ?? false;
+  const exerciseDuration = currentItem?.duration ?? 0;
+  const midpoint = Math.floor(exerciseDuration / 2);
+  const isLeftSide = timeRemaining > midpoint;
+  const currentSide = isLeftSide ? 'LEFT' : 'RIGHT';
+  const prevTimeRef = useRef<number | null>(null);
+
   // Keep screen awake
   useEffect(() => {
     activateKeepAwakeAsync();
@@ -119,6 +127,19 @@ export default function TimerScreen() {
       soundManager.playWarning();
     }
   }, [timeRemaining]);
+
+  // Side switch sound - plays when crossing the midpoint
+  useEffect(() => {
+    if (status === 'running' && hasSideSwitching && prevTimeRef.current !== null) {
+      const prevSideWasLeft = prevTimeRef.current > midpoint;
+      const nowIsRight = timeRemaining <= midpoint && timeRemaining > 0;
+      // Play switch sound exactly when crossing from left to right
+      if (prevSideWasLeft && nowIsRight && timeRemaining === midpoint) {
+        soundManager.playSideSwitch();
+      }
+    }
+    prevTimeRef.current = timeRemaining;
+  }, [timeRemaining, status, hasSideSwitching, midpoint]);
 
   // Pulse animation for countdown
   useEffect(() => {
@@ -243,6 +264,9 @@ export default function TimerScreen() {
       <View style={styles.timerContainer}>
         <Text style={styles.itemType}>{getItemTypeLabel(currentItem.type)}</Text>
         <Text style={styles.itemName}>{currentItem.name}</Text>
+        {hasSideSwitching && (
+          <Text style={styles.sideIndicator}>{currentSide} SIDE</Text>
+        )}
 
         <Text style={styles.timerDisplay}>{formatTime(timeRemaining)}</Text>
 
@@ -361,7 +385,19 @@ const styles = StyleSheet.create({
     fontWeight: typography.bold,
     color: colors.text,
     textAlign: 'center',
-    marginBottom: spacing.xl,
+    marginBottom: spacing.sm,
+  },
+  sideIndicator: {
+    fontSize: typography.xl,
+    fontWeight: typography.bold,
+    color: 'rgba(255,255,255,0.9)',
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: 8,
+    marginBottom: spacing.md,
+    letterSpacing: 2,
+    overflow: 'hidden',
   },
   timerDisplay: {
     fontSize: typography['7xl'],

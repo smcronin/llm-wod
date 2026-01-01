@@ -185,6 +185,21 @@ class SoundManager {
       }
     }
   }
+
+  async playSideSwitch(): Promise<void> {
+    if (Platform.OS === 'web') {
+      // Distinctive double-tone "switch" sound - descending then ascending
+      await this.playTone(784, 0.1, 'sine'); // G5
+      setTimeout(() => this.playTone(523, 0.1, 'sine'), 100); // C5
+      setTimeout(() => this.playTone(784, 0.15, 'sine'), 200); // G5 again
+    } else {
+      try {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      } catch (error) {
+        console.warn('Haptic feedback failed:', error);
+      }
+    }
+  }
 }
 
 export const soundManager = new SoundManager();

@@ -11,6 +11,7 @@ export interface Exercise {
   description: string;
   muscleGroups: string[];
   equipment?: string[];
+  switchSides?: boolean; // If true, exercise is split: first half LEFT SIDE, second half RIGHT SIDE
   modifications?: {
     easier?: string;
     harder?: string;

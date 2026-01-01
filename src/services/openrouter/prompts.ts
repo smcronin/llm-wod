@@ -41,7 +41,12 @@ Calorie estimates should be reasonable:
 Exercise difficulty progression:
 - Beginner: Focus on form, longer rests, simpler movements
 - Intermediate: Moderate intensity, compound movements
-- Advanced: High intensity, complex movements, shorter rests`;
+- Advanced: High intensity, complex movements, shorter rests
+
+Side-switching exercises:
+- For unilateral exercises (lunges, single-leg deadlifts, pistol squats, single-arm rows, etc.), set "switchSides": true
+- When switchSides is true, the UI will display "LEFT SIDE" for the first half of the exercise duration, then "RIGHT SIDE" for the second half
+- This applies to any exercise that works one side at a time and needs equal work on both sides`;
 }
 
 export function buildPrompt(context: GenerationContext): string {
@@ -111,7 +116,8 @@ Return a JSON object with this exact structure:
         "name": "string",
         "duration": number (seconds, typically 30-45),
         "description": "string - clear instructions on how to perform",
-        "muscleGroups": ["string"]
+        "muscleGroups": ["string"],
+        "switchSides": boolean (optional - true for unilateral exercises like lunges, single-leg moves)
       }
     ]
   },
@@ -131,6 +137,7 @@ Return a JSON object with this exact structure:
           "description": "string - clear form cues and instructions",
           "muscleGroups": ["string"],
           "equipment": ["string"] (optional, only if equipment needed),
+          "switchSides": boolean (optional - true for unilateral exercises like lunges, single-arm rows),
           "modifications": {
             "easier": "string - easier variation" (optional),
             "harder": "string - harder variation" (optional)
@@ -146,7 +153,8 @@ Return a JSON object with this exact structure:
         "name": "string",
         "duration": number (seconds, typically 30-45),
         "description": "string - stretching/breathing cues",
-        "muscleGroups": ["string"]
+        "muscleGroups": ["string"],
+        "switchSides": boolean (optional - true for unilateral stretches)
       }
     ]
   }
