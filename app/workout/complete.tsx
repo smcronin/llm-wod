@@ -1,22 +1,50 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Button, Card } from '@/components/common';
+import { Button, Card, Input } from '@/components/common';
 import { colors, spacing, typography, borderRadius } from '@/theme';
 import { useTimerStore, useHistoryStore } from '@/stores';
 import { formatDuration } from '@/utils';
+
+function getRpeColor(value: number): string {
+  if (value <= 3) return colors.success;
+  if (value <= 6) return colors.warning;
+  if (value <= 8) return colors.accent;
+  return colors.error;
+}
+
+function getRpeLabel(value: number): string {
+  if (value <= 2) return 'Very Easy';
+  if (value <= 4) return 'Easy';
+  if (value <= 6) return 'Moderate';
+  if (value <= 8) return 'Hard';
+  return 'Maximum';
+}
 
 export default function WorkoutCompleteScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
+  const [rpe, setRpe] = useState<number | undefined>(undefined);
+  const [notes, setNotes] = useState('');
+
+  // Memoize the quote so it doesn't change on every keystroke
+  const motivationalQuote = useMemo(() => getMotivationalQuote(), []);
+
   const session = useTimerStore((state) => state.session);
   const reset = useTimerStore((state) => state.reset);
   const history = useHistoryStore((state) => state.history);
+  const updateSession = useHistoryStore((state) => state.updateSession);
 
   const handleDone = () => {
+    if (session && (rpe !== undefined || notes.trim())) {
+      updateSession(session.id, {
+        rpe,
+        notes: notes.trim() || undefined,
+      });
+    }
     reset();
     router.replace('/(tabs)');
   };
@@ -121,11 +149,73 @@ export default function WorkoutCompleteScreen() {
           </View>
         </Card>
 
+        {/* RPE Input */}
+        <Card style={styles.feedbackCard}>
+          <Text style={styles.feedbackTitle}>How did it feel?</Text>
+          <Text style={styles.feedbackSubtitle}>Rate your perceived exertion (optional)</Text>
+
+          <View style={styles.rpeContainer}>
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => (
+              <TouchableOpacity
+                key={value}
+                style={[
+                  styles.rpeButton,
+                  {
+                    backgroundColor:
+                      rpe === value ? getRpeColor(value) : getRpeColor(value) + '30',
+                    borderColor: rpe === value ? getRpeColor(value) : 'transparent',
+                  },
+                ]}
+                onPress={() => setRpe(rpe === value ? undefined : value)}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    styles.rpeText,
+                    { color: rpe === value ? colors.text : getRpeColor(value) },
+                  ]}
+                >
+                  {value}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <View style={styles.rpeLabels}>
+            <Text style={styles.rpeLabel}>Easy</Text>
+            <Text style={styles.rpeLabel}>Moderate</Text>
+            <Text style={styles.rpeLabel}>Maximum</Text>
+          </View>
+
+          {rpe !== undefined && (
+            <View style={styles.rpeSelectedContainer}>
+              <Text style={[styles.rpeSelectedText, { color: getRpeColor(rpe) }]}>
+                RPE {rpe}: {getRpeLabel(rpe)}
+              </Text>
+            </View>
+          )}
+        </Card>
+
+        {/* Notes Input */}
+        <Card style={styles.feedbackCard}>
+          <Text style={styles.feedbackTitle}>Any notes?</Text>
+          <Text style={styles.feedbackSubtitle}>
+            Record how you felt, any issues, or thoughts (optional)
+          </Text>
+          <Input
+            placeholder="e.g., Felt strong today, shoulder was tight..."
+            value={notes}
+            onChangeText={setNotes}
+            multiline
+            containerStyle={styles.notesInput}
+          />
+        </Card>
+
         {/* Motivational Quote */}
         <View style={styles.quoteContainer}>
           <Ionicons name="chatbubble-outline" size={20} color={colors.textMuted} />
           <Text style={styles.quote}>
-            {getMotivationalQuote()}
+            {motivationalQuote}
           </Text>
         </View>
       </ScrollView>
@@ -302,5 +392,57 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     borderTopWidth: 1,
     borderTopColor: colors.border,
+  },
+  feedbackCard: {
+    marginBottom: spacing.lg,
+  },
+  feedbackTitle: {
+    fontSize: typography.base,
+    fontWeight: typography.semibold,
+    color: colors.text,
+    marginBottom: spacing.xs,
+  },
+  feedbackSubtitle: {
+    fontSize: typography.sm,
+    color: colors.textMuted,
+    marginBottom: spacing.md,
+  },
+  rpeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing.xs,
+  },
+  rpeButton: {
+    flex: 1,
+    aspectRatio: 1,
+    maxWidth: 32,
+    borderRadius: borderRadius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+  },
+  rpeText: {
+    fontSize: typography.sm,
+    fontWeight: typography.bold,
+  },
+  rpeLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: spacing.sm,
+  },
+  rpeLabel: {
+    fontSize: typography.xs,
+    color: colors.textMuted,
+  },
+  rpeSelectedContainer: {
+    marginTop: spacing.md,
+    alignItems: 'center',
+  },
+  rpeSelectedText: {
+    fontSize: typography.sm,
+    fontWeight: typography.semibold,
+  },
+  notesInput: {
+    marginTop: spacing.xs,
   },
 });

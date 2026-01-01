@@ -44,7 +44,7 @@ export default function OnboardingGoals() {
       hasCompletedOnboarding: false,
     });
 
-    router.push('/onboarding/equipment');
+    router.push('/onboarding/training');
   };
 
   return (
@@ -56,6 +56,7 @@ export default function OnboardingGoals() {
           </TouchableOpacity>
           <View style={styles.progress}>
             <View style={[styles.progressDot, styles.progressDotActive]} />
+            <View style={styles.progressDot} />
             <View style={styles.progressDot} />
             <View style={styles.progressDot} />
           </View>

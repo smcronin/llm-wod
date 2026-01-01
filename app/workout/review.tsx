@@ -36,6 +36,7 @@ export default function WorkoutReviewScreen() {
   const initializeTimer = useTimerStore((state) => state.initializeTimer);
   const profile = useUserStore((state) => state.profile);
   const getRecentSessions = useHistoryStore((state) => state.getRecentSessions);
+  const workoutSummary = useHistoryStore((state) => state.workoutSummary);
 
   const [showFeedback, setShowFeedback] = useState(false);
   const [expandAll, setExpandAll] = useState(false);
@@ -77,19 +78,24 @@ export default function WorkoutReviewScreen() {
 
     try {
       const selectedSet = profile.equipmentSets.find((s) => s.isDefault) || profile.equipmentSets[0];
-      const recentSessions = getRecentSessions(3);
+      const recentSessions = getRecentSessions(5);
       const recentWorkouts: WorkoutSummary[] = recentSessions.map((s) => ({
         name: s.workout.name,
         focusAreas: s.workout.focusAreas,
         exercisesUsed: s.workout.circuits.flatMap((c) => c.exercises.map((e) => e.name)),
         completedAt: s.completedAt || s.startedAt || '',
+        rpe: s.feedback?.rpe,
+        notes: s.feedback?.notes,
       }));
 
       const workout = await generateWorkout({
         userGoals: profile.fitnessGoals,
         equipmentAvailable: selectedSet?.equipment || [],
+        equipmentNotes: selectedSet?.notes,
+        trainingNotes: profile.trainingNotes,
         requestedDuration: selectedDuration,
         recentWorkouts,
+        olderWorkoutsSummary: workoutSummary,
         userAge: profile.age,
         userWeight: profile.weight,
         feedback: feedbackMessage.trim(),

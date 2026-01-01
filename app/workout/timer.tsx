@@ -351,6 +351,7 @@ export default function TimerScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    overflow: 'hidden',
   },
   header: {
     flexDirection: 'row',

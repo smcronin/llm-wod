@@ -1,3 +1,5 @@
+import { WorkoutSummary, SummarizedWorkoutHistory } from '@/types/llm';
+
 export interface GenerationContext {
   userGoals: string;
   equipmentAvailable: string[];
@@ -5,16 +7,10 @@ export interface GenerationContext {
   trainingNotes?: string;
   requestedDuration: number;
   recentWorkouts: WorkoutSummary[];
+  olderWorkoutsSummary?: SummarizedWorkoutHistory;
   userAge?: number;
   userWeight?: number;
   feedback?: string;
-}
-
-export interface WorkoutSummary {
-  name: string;
-  focusAreas: string[];
-  exercisesUsed: string[];
-  completedAt: string;
 }
 
 export function getSystemPrompt(): string {
@@ -58,6 +54,7 @@ export function buildPrompt(context: GenerationContext): string {
     trainingNotes,
     requestedDuration,
     recentWorkouts,
+    olderWorkoutsSummary,
     userAge,
     userWeight,
     feedback,
@@ -77,16 +74,41 @@ ${equipmentNotes ? `\nEQUIPMENT NOTES:\n${equipmentNotes}` : ''}
 `;
 
   if (recentWorkouts.length > 0) {
+    // Check for high RPE or fatigue indicators
+    const hasHighRpe = recentWorkouts.some((w) => w.rpe && w.rpe >= 8);
+    const hasFatigueNotes = recentWorkouts.some(
+      (w) =>
+        w.notes &&
+        (w.notes.toLowerCase().includes('sore') ||
+          w.notes.toLowerCase().includes('tired') ||
+          w.notes.toLowerCase().includes('fatigue') ||
+          w.notes.toLowerCase().includes('exhausted'))
+    );
+
     prompt += `
 RECENT WORKOUTS (for variety and progressive overload):
 ${recentWorkouts
   .map(
     (w, i) => `${i + 1}. "${w.name}" - Focus: ${w.focusAreas.join(', ')} - Date: ${w.completedAt}
-   Exercises used: ${w.exercisesUsed.slice(0, 5).join(', ')}`
+   Exercises used: ${w.exercisesUsed.slice(0, 5).join(', ')}${w.rpe ? `\n   User RPE: ${w.rpe}/10` : ''}${w.notes ? `\n   User notes: "${w.notes}"` : ''}`
   )
   .join('\n')}
 
 Ensure this workout provides variety from recent sessions. Avoid repeating the same exercises if possible.
+${hasHighRpe ? '\nNOTE: User has reported high exertion (RPE 8+) recently. Consider recovery-focused or lighter intensity options.' : ''}
+${hasFatigueNotes ? '\nNOTE: User has mentioned fatigue or soreness. Adjust intensity appropriately and consider mobility/recovery work.' : ''}
+`;
+  }
+
+  if (olderWorkoutsSummary) {
+    prompt += `
+WORKOUT HISTORY SUMMARY (${olderWorkoutsSummary.totalWorkouts} workouts from ${olderWorkoutsSummary.dateRange}):
+${olderWorkoutsSummary.summary}
+${olderWorkoutsSummary.averageRPE ? `- Average RPE: ${olderWorkoutsSummary.averageRPE.toFixed(1)}/10` : ''}
+- Common focus areas: ${olderWorkoutsSummary.commonFocusAreas.join(', ')}
+- Frequently used exercises: ${olderWorkoutsSummary.frequentExercises.slice(0, 8).join(', ')}
+
+Use this context to personalize the workout and build on the user's training history.
 `;
   }
 

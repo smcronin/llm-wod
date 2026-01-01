@@ -36,6 +36,7 @@ export default function HomeScreen() {
     setSelectedDuration,
   } = useWorkoutStore();
   const getRecentSessions = useHistoryStore((state) => state.getRecentSessions);
+  const workoutSummary = useHistoryStore((state) => state.workoutSummary);
 
   const [refreshing, setRefreshing] = useState(false);
 
@@ -57,8 +58,8 @@ export default function HomeScreen() {
     setGenerationError(null);
 
     try {
-      // Get recent workouts for context
-      const recentSessions = getRecentSessions(3);
+      // Get recent 5 workouts for full context (including RPE/notes)
+      const recentSessions = getRecentSessions(5);
       const recentWorkouts: WorkoutSummary[] = recentSessions.map((s) => ({
         name: s.workout.name,
         focusAreas: s.workout.focusAreas,
@@ -66,6 +67,8 @@ export default function HomeScreen() {
           c.exercises.map((e) => e.name)
         ),
         completedAt: s.completedAt || s.startedAt || '',
+        rpe: s.feedback?.rpe,
+        notes: s.feedback?.notes,
       }));
 
       const workout = await generateWorkout({
@@ -75,6 +78,7 @@ export default function HomeScreen() {
         trainingNotes: profile.trainingNotes,
         requestedDuration: selectedDuration,
         recentWorkouts,
+        olderWorkoutsSummary: workoutSummary,
         userAge: profile.age,
         userWeight: profile.weight,
       });

@@ -1,13 +1,20 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { WorkoutSession, WorkoutHistory } from '@/types/workout';
+import { WorkoutSession, WorkoutHistory, PostWorkoutFeedback } from '@/types/workout';
+import { SummarizedWorkoutHistory } from '@/types/llm';
 
 interface HistoryState {
   history: WorkoutHistory;
+  workoutSummary?: SummarizedWorkoutHistory;
   addSession: (session: WorkoutSession) => void;
+  updateSession: (sessionId: string, feedback: PostWorkoutFeedback) => void;
   removeSession: (sessionId: string) => void;
   getRecentSessions: (count: number) => WorkoutSession[];
+  getSessionById: (sessionId: string) => WorkoutSession | undefined;
+  setWorkoutSummary: (summary: SummarizedWorkoutHistory) => void;
+  updateWorkoutSummary: (summary: string) => void;
+  clearWorkoutSummary: () => void;
   clearHistory: () => void;
 }
 
@@ -83,6 +90,7 @@ export const useHistoryStore = create<HistoryState>()(
   persist(
     (set, get) => ({
       history: initialHistory,
+      workoutSummary: undefined,
 
       addSession: (session) =>
         set((state) => {
@@ -101,6 +109,28 @@ export const useHistoryStore = create<HistoryState>()(
               totalCaloriesBurned:
                 state.history.totalCaloriesBurned + session.estimatedCaloriesBurned,
               streak,
+            },
+          };
+        }),
+
+      updateSession: (sessionId, feedback) =>
+        set((state) => {
+          const newSessions = state.history.sessions.map((s) =>
+            s.id === sessionId
+              ? {
+                  ...s,
+                  feedback: {
+                    ...s.feedback,
+                    ...feedback,
+                    updatedAt: new Date().toISOString(),
+                  },
+                }
+              : s
+          );
+          return {
+            history: {
+              ...state.history,
+              sessions: newSessions,
             },
           };
         }),
@@ -125,7 +155,27 @@ export const useHistoryStore = create<HistoryState>()(
           .slice(0, count);
       },
 
-      clearHistory: () => set({ history: initialHistory }),
+      getSessionById: (sessionId) => {
+        const { history } = get();
+        return history.sessions.find((s) => s.id === sessionId);
+      },
+
+      setWorkoutSummary: (summary) => set({ workoutSummary: summary }),
+
+      updateWorkoutSummary: (summary) =>
+        set((state) => ({
+          workoutSummary: state.workoutSummary
+            ? {
+                ...state.workoutSummary,
+                summary,
+                generatedAt: new Date().toISOString(),
+              }
+            : undefined,
+        })),
+
+      clearWorkoutSummary: () => set({ workoutSummary: undefined }),
+
+      clearHistory: () => set({ history: initialHistory, workoutSummary: undefined }),
     }),
     {
       name: 'history-storage',

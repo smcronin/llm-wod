@@ -1,3 +1,30 @@
+// ============================================
+// WORKOUT SUMMARY FOR LLM CONTEXT
+// ============================================
+
+export interface WorkoutSummary {
+  name: string;
+  focusAreas: string[];
+  exercisesUsed: string[];
+  completedAt: string;
+  rpe?: number;
+  notes?: string;
+}
+
+export interface SummarizedWorkoutHistory {
+  totalWorkouts: number;
+  dateRange: string; // e.g., "Dec 1 - Dec 28, 2024"
+  summary: string; // LLM-generated summary
+  averageRPE?: number;
+  commonFocusAreas: string[];
+  frequentExercises: string[];
+  generatedAt: string; // ISO timestamp
+}
+
+// ============================================
+// LLM RESPONSE SCHEMA
+// ============================================
+
 // LLM Response Schema - what OpenRouter returns
 export interface LLMWorkoutResponse {
   name: string;

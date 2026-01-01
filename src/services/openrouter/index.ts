@@ -1,2 +1,3 @@
 export { generateWorkout, GenerationContext } from './client';
-export { WorkoutSummary } from './prompts';
+export { summarizeWorkoutHistory } from './summarize';
+export type { WorkoutSummary, SummarizedWorkoutHistory } from '@/types/llm';

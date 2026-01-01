@@ -63,6 +63,7 @@ export default function OnboardingEquipment() {
           <View style={styles.progress}>
             <View style={[styles.progressDot, styles.progressDotActive]} />
             <View style={[styles.progressDot, styles.progressDotActive]} />
+            <View style={[styles.progressDot, styles.progressDotActive]} />
             <View style={styles.progressDot} />
           </View>
         </View>

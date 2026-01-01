@@ -10,6 +10,13 @@ import { WorkoutSession } from '@/types/workout';
 import { formatDate, formatDuration, flattenWorkout } from '@/utils';
 import { DIFFICULTY_COLORS } from '@/utils/constants';
 
+function getRpeColor(value: number): string {
+  if (value <= 3) return colors.success;
+  if (value <= 6) return colors.warning;
+  if (value <= 8) return colors.accent;
+  return colors.error;
+}
+
 export default function HistoryScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -24,6 +31,10 @@ export default function HistoryScreen() {
     router.push('/workout/review');
   };
 
+  const handleEditFeedback = (sessionId: string) => {
+    router.push(`/workout/edit-feedback?sessionId=${sessionId}`);
+  };
+
   const stats = {
     totalWorkouts: history.totalWorkoutsCompleted,
     totalMinutes: history.totalMinutesWorked,
@@ -34,6 +45,7 @@ export default function HistoryScreen() {
   const renderSession = ({ item }: { item: WorkoutSession }) => {
     const isCompleted = item.status === 'completed';
     const difficultyColor = DIFFICULTY_COLORS[item.workout.difficulty];
+    const hasNotes = item.feedback?.notes && item.feedback.notes.length > 0;
 
     return (
       <Card style={styles.sessionCard}>
@@ -88,6 +100,20 @@ export default function HistoryScreen() {
             color={difficultyColor}
             selected
           />
+          {item.feedback?.rpe && (
+            <View
+              style={[
+                styles.rpeBadge,
+                { backgroundColor: getRpeColor(item.feedback.rpe) + '20' },
+              ]}
+            >
+              <Text
+                style={[styles.rpeText, { color: getRpeColor(item.feedback.rpe) }]}
+              >
+                RPE {item.feedback.rpe}
+              </Text>
+            </View>
+          )}
         </View>
 
         {item.workout.focusAreas.length > 0 && (
@@ -99,6 +125,28 @@ export default function HistoryScreen() {
             ))}
           </View>
         )}
+
+        {/* Notes preview */}
+        {hasNotes && (
+          <View style={styles.notesPreview}>
+            <Ionicons name="chatbubble-outline" size={14} color={colors.textMuted} />
+            <Text style={styles.notesText} numberOfLines={2}>
+              {item.feedback.notes}
+            </Text>
+          </View>
+        )}
+
+        {/* Edit feedback button */}
+        <TouchableOpacity
+          style={styles.editButton}
+          onPress={() => handleEditFeedback(item.id)}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="pencil-outline" size={14} color={colors.primary} />
+          <Text style={styles.editButtonText}>
+            {item.feedback?.rpe || hasNotes ? 'Edit RPE/Notes' : 'Add RPE/Notes'}
+          </Text>
+        </TouchableOpacity>
       </Card>
     );
   };
@@ -303,5 +351,45 @@ const styles = StyleSheet.create({
     fontSize: typography.sm,
     color: colors.textSecondary,
     textAlign: 'center',
+  },
+  rpeBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: borderRadius.sm,
+  },
+  rpeText: {
+    fontSize: typography.xs,
+    fontWeight: typography.semibold,
+  },
+  notesPreview: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.xs,
+    marginTop: spacing.sm,
+    padding: spacing.sm,
+    backgroundColor: colors.surfaceLight,
+    borderRadius: borderRadius.sm,
+  },
+  notesText: {
+    flex: 1,
+    fontSize: typography.xs,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
+    lineHeight: 18,
+  },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.md,
+    paddingVertical: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  editButtonText: {
+    fontSize: typography.sm,
+    color: colors.primary,
+    fontWeight: typography.medium,
   },
 });

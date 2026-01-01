@@ -102,6 +102,12 @@ export interface FlattenedWorkout {
 
 export type WorkoutStatus = 'pending' | 'in_progress' | 'completed' | 'stopped_early';
 
+export interface PostWorkoutFeedback {
+  rpe?: number; // Rate of Perceived Exertion 1-10
+  notes?: string; // Free-text notes about the workout
+  updatedAt?: string; // ISO timestamp of last edit
+}
+
 export interface WorkoutSession {
   id: string;
   workoutId: string;
@@ -121,6 +127,7 @@ export interface WorkoutSession {
   };
   actualDurationWorked: number;
   estimatedCaloriesBurned: number;
+  feedback?: PostWorkoutFeedback;
 }
 
 // ============================================

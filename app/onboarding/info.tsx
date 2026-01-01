@@ -45,6 +45,7 @@ export default function OnboardingInfo() {
             <View style={[styles.progressDot, styles.progressDotActive]} />
             <View style={[styles.progressDot, styles.progressDotActive]} />
             <View style={[styles.progressDot, styles.progressDotActive]} />
+            <View style={[styles.progressDot, styles.progressDotActive]} />
           </View>
         </View>
 

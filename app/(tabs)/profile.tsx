@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -15,6 +16,7 @@ import { colors, spacing, typography, borderRadius } from '@/theme';
 import { useUserStore, useHistoryStore } from '@/stores';
 import { ALL_EQUIPMENT } from '@/utils/constants';
 import { v4 as uuid } from 'uuid';
+import { summarizeWorkoutHistory } from '@/services/openrouter';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -25,6 +27,12 @@ export default function ProfileScreen() {
   const addEquipmentSet = useUserStore((state) => state.addEquipmentSet);
   const clearHistory = useHistoryStore((state) => state.clearHistory);
   const resetOnboarding = useUserStore((state) => state.resetOnboarding);
+  const history = useHistoryStore((state) => state.history);
+  const workoutSummary = useHistoryStore((state) => state.workoutSummary);
+  const setWorkoutSummary = useHistoryStore((state) => state.setWorkoutSummary);
+  const updateWorkoutSummary = useHistoryStore((state) => state.updateWorkoutSummary);
+  const clearWorkoutSummary = useHistoryStore((state) => state.clearWorkoutSummary);
+  const getRecentSessions = useHistoryStore((state) => state.getRecentSessions);
 
   const [showAddEquipment, setShowAddEquipment] = useState(false);
   const [newSetName, setNewSetName] = useState('');
@@ -32,6 +40,9 @@ export default function ProfileScreen() {
   const [selectedEquipment, setSelectedEquipment] = useState<string[]>([]);
   const [trainingNotes, setTrainingNotes] = useState(profile?.trainingNotes || '');
   const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const [isEditingMemory, setIsEditingMemory] = useState(false);
+  const [editedMemory, setEditedMemory] = useState('');
+  const [isGeneratingMemory, setIsGeneratingMemory] = useState(false);
 
   const handleAddEquipmentSet = () => {
     if (!newSetName.trim()) return;
@@ -99,6 +110,53 @@ export default function ProfileScreen() {
     );
   };
 
+  const handleGenerateMemory = async () => {
+    const olderSessions = getRecentSessions(50).slice(5);
+    if (olderSessions.length < 3) {
+      Alert.alert(
+        'Not Enough Data',
+        'You need at least 8 completed workouts to generate a memory summary (5 recent + 3 for summary).'
+      );
+      return;
+    }
+
+    setIsGeneratingMemory(true);
+    try {
+      const summary = await summarizeWorkoutHistory(olderSessions);
+      setWorkoutSummary(summary);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to generate workout memory. Please try again.');
+      console.error('Memory generation error:', error);
+    } finally {
+      setIsGeneratingMemory(false);
+    }
+  };
+
+  const handleEditMemory = () => {
+    setEditedMemory(workoutSummary?.summary || '');
+    setIsEditingMemory(true);
+  };
+
+  const handleSaveMemory = () => {
+    if (editedMemory.trim()) {
+      updateWorkoutSummary(editedMemory.trim());
+    }
+    setIsEditingMemory(false);
+  };
+
+  const handleDeleteMemory = () => {
+    Alert.alert(
+      'Delete Workout Memory',
+      'This will delete your workout memory summary. You can regenerate it later.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: clearWorkoutSummary },
+      ]
+    );
+  };
+
+  const canGenerateMemory = getRecentSessions(50).slice(5).length >= 3;
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
@@ -142,6 +200,93 @@ export default function ProfileScreen() {
           ) : (
             <Text style={styles.goalsText}>
               {profile?.trainingNotes || 'Add notes about your abilities, preferences, or limitations...'}
+            </Text>
+          )}
+        </Card>
+
+        {/* Workout Memory Section */}
+        <Card style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Workout Memory</Text>
+            {workoutSummary && (
+              <View style={styles.memoryActions}>
+                <TouchableOpacity onPress={handleEditMemory} style={styles.memoryAction}>
+                  <Ionicons name="pencil" size={18} color={colors.primary} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleDeleteMemory} style={styles.memoryAction}>
+                  <Ionicons name="trash-outline" size={18} color={colors.error} />
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+
+          {isGeneratingMemory ? (
+            <View style={styles.memoryLoading}>
+              <ActivityIndicator size="small" color={colors.primary} />
+              <Text style={styles.memoryLoadingText}>Generating workout memory...</Text>
+            </View>
+          ) : workoutSummary ? (
+            isEditingMemory ? (
+              <View>
+                <Input
+                  value={editedMemory}
+                  onChangeText={setEditedMemory}
+                  multiline
+                  numberOfLines={4}
+                  containerStyle={styles.input}
+                />
+                <View style={styles.memoryEditButtons}>
+                  <Button title="Save" onPress={handleSaveMemory} size="sm" />
+                  <Button
+                    title="Cancel"
+                    onPress={() => setIsEditingMemory(false)}
+                    size="sm"
+                    variant="outline"
+                  />
+                </View>
+              </View>
+            ) : (
+              <View>
+                <Text style={styles.memoryText}>{workoutSummary.summary}</Text>
+                <View style={styles.memoryMeta}>
+                  <Text style={styles.memoryMetaText}>
+                    Based on {workoutSummary.totalWorkouts} workouts ({workoutSummary.dateRange})
+                  </Text>
+                  {workoutSummary.averageRPE && (
+                    <Text style={styles.memoryMetaText}>
+                      Avg RPE: {workoutSummary.averageRPE.toFixed(1)}/10
+                    </Text>
+                  )}
+                  <Text style={styles.memoryMetaText}>
+                    Updated: {new Date(workoutSummary.generatedAt).toLocaleDateString()}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.regenerateButton}
+                  onPress={handleGenerateMemory}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="refresh" size={14} color={colors.primary} />
+                  <Text style={styles.regenerateText}>Regenerate</Text>
+                </TouchableOpacity>
+              </View>
+            )
+          ) : canGenerateMemory ? (
+            <View>
+              <Text style={styles.memoryEmptyText}>
+                Generate a summary of your workout history to personalize future workouts.
+              </Text>
+              <Button
+                title="Generate Workout Memory"
+                onPress={handleGenerateMemory}
+                size="sm"
+                variant="outline"
+              />
+            </View>
+          ) : (
+            <Text style={styles.memoryEmptyText}>
+              Complete at least 8 workouts to generate a workout memory summary.
+              {history.sessions.length > 0 && ` (${history.sessions.length} completed so far)`}
             </Text>
           )}
         </Card>
@@ -433,5 +578,62 @@ const styles = StyleSheet.create({
   dangerButtonText: {
     fontSize: typography.sm,
     color: colors.error,
+  },
+  memoryActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  memoryAction: {
+    padding: spacing.xs,
+  },
+  memoryLoading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+  },
+  memoryLoadingText: {
+    fontSize: typography.sm,
+    color: colors.textSecondary,
+  },
+  memoryText: {
+    fontSize: typography.sm,
+    color: colors.text,
+    lineHeight: 22,
+    marginBottom: spacing.md,
+  },
+  memoryMeta: {
+    gap: spacing.xs,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  memoryMetaText: {
+    fontSize: typography.xs,
+    color: colors.textMuted,
+  },
+  memoryEditButtons: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  memoryEmptyText: {
+    fontSize: typography.sm,
+    color: colors.textSecondary,
+    lineHeight: 20,
+    marginBottom: spacing.md,
+  },
+  regenerateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  regenerateText: {
+    fontSize: typography.sm,
+    color: colors.primary,
+    fontWeight: typography.medium,
   },
 });
