@@ -405,6 +405,8 @@ export default function AnalyticsScreen() {
   const [existingWeight, setExistingWeight] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showGoalWeightModal, setShowGoalWeightModal] = useState(false);
+  const [newGoalWeight, setNewGoalWeight] = useState('');
 
   const weightUnit = profile?.weightUnit || 'lbs';
 
@@ -630,6 +632,23 @@ export default function AnalyticsScreen() {
     return dates;
   };
 
+  const handleOpenGoalWeightModal = () => {
+    setNewGoalWeight(profile?.goalWeight?.toString() || '');
+    setShowGoalWeightModal(true);
+  };
+
+  const handleSaveGoalWeight = () => {
+    const goalWeight = parseFloat(newGoalWeight);
+    if (!isNaN(goalWeight) && goalWeight > 0) {
+      updateProfile({ goalWeight });
+    } else if (newGoalWeight === '') {
+      // Allow clearing goal weight
+      updateProfile({ goalWeight: undefined });
+    }
+    setShowGoalWeightModal(false);
+    setNewGoalWeight('');
+  };
+
   const handlePrevMonth = () => {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
   };
@@ -744,14 +763,25 @@ export default function AnalyticsScreen() {
             </TouchableOpacity>
           </View>
 
-          {currentWeight && (
+          {(currentWeight || profile?.goalWeight) && (
             <View style={styles.weightSummary}>
-              <View style={styles.weightCurrent}>
-                <Text style={styles.weightCurrentValue}>
-                  {currentWeight} {weightUnit}
-                </Text>
-                <Text style={styles.weightCurrentLabel}>Current</Text>
-              </View>
+              {currentWeight && (
+                <View style={styles.weightCurrent}>
+                  <Text style={styles.weightCurrentValue}>
+                    {currentWeight} {weightUnit}
+                  </Text>
+                  <Text style={styles.weightCurrentLabel}>Current</Text>
+                </View>
+              )}
+              <TouchableOpacity style={styles.weightGoal} onPress={handleOpenGoalWeightModal}>
+                <View style={styles.weightGoalContent}>
+                  <Text style={styles.weightGoalValue}>
+                    {profile?.goalWeight ? `${profile.goalWeight} ${weightUnit}` : 'Set goal'}
+                  </Text>
+                  <Text style={styles.weightGoalLabel}>Goal</Text>
+                </View>
+                <Ionicons name="pencil" size={14} color={colors.textMuted} />
+              </TouchableOpacity>
               {weightChange && (
                 <View style={styles.weightChange}>
                   <View style={styles.weightChangeRow}>
@@ -781,6 +811,8 @@ export default function AnalyticsScreen() {
             entries={allWeightEntries}
             showFullHistory={showFullWeightHistory}
             onToggleHistory={() => setShowFullWeightHistory(!showFullWeightHistory)}
+            goalWeight={profile?.goalWeight}
+            weightUnit={weightUnit}
           />
         </Card>
 
@@ -954,6 +986,63 @@ export default function AnalyticsScreen() {
                   <Text style={styles.modalButtonSaveText}>
                     {showOverwriteConfirm ? 'Replace' : 'Save'}
                   </Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Goal Weight Modal */}
+      <Modal
+        visible={showGoalWeightModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowGoalWeightModal(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardAvoidingView}
+        >
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setShowGoalWeightModal(false)}
+          >
+            <TouchableOpacity activeOpacity={1} style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Goal Weight</Text>
+              <Text style={styles.goalWeightHint}>
+                Set a target weight to track your progress. Leave empty to remove your goal.
+              </Text>
+
+              <View style={styles.weightInputContainer}>
+                <TextInput
+                  style={styles.weightInput}
+                  value={newGoalWeight}
+                  onChangeText={setNewGoalWeight}
+                  keyboardType="decimal-pad"
+                  placeholder="0"
+                  placeholderTextColor={colors.textMuted}
+                  autoFocus
+                />
+                <Text style={styles.weightInputUnit}>{weightUnit}</Text>
+              </View>
+
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={styles.modalButtonCancel}
+                  onPress={() => {
+                    setShowGoalWeightModal(false);
+                    setNewGoalWeight('');
+                  }}
+                >
+                  <Text style={styles.modalButtonCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.modalButtonSave}
+                  onPress={handleSaveGoalWeight}
+                >
+                  <Text style={styles.modalButtonSaveText}>Save</Text>
                 </TouchableOpacity>
               </View>
             </TouchableOpacity>
@@ -1165,6 +1254,30 @@ const styles = StyleSheet.create({
     fontSize: typography.xs,
     color: colors.textMuted,
   },
+  weightGoal: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    backgroundColor: colors.primary + '15',
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.primary + '30',
+    borderStyle: 'dashed',
+  },
+  weightGoalContent: {
+    alignItems: 'center',
+  },
+  weightGoalValue: {
+    fontSize: typography.base,
+    fontWeight: typography.semibold,
+    color: colors.primary,
+  },
+  weightGoalLabel: {
+    fontSize: typography.xs,
+    color: colors.textMuted,
+  },
 
   // Graph
   graphWrapper: {
@@ -1206,6 +1319,33 @@ const styles = StyleSheet.create({
     backgroundColor: colors.success,
     borderWidth: 2,
     borderColor: colors.surface,
+  },
+  goalWeightLine: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  goalWeightDashes: {
+    flex: 1,
+    height: 2,
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: 1,
+  },
+  goalWeightLabel: {
+    backgroundColor: colors.primary + '30',
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 2,
+    borderRadius: borderRadius.xs,
+    marginLeft: spacing.xs,
+  },
+  goalWeightLabelText: {
+    fontSize: typography.xs,
+    color: colors.primary,
+    fontWeight: typography.medium,
   },
   xAxisLabels: {
     flexDirection: 'row',
@@ -1328,6 +1468,13 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: spacing.lg,
     textAlign: 'center',
+  },
+  goalWeightHint: {
+    fontSize: typography.sm,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+    lineHeight: 20,
   },
   dateSelector: {
     flexDirection: 'row',
