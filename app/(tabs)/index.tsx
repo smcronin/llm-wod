@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Pressable,
   RefreshControl,
   KeyboardAvoidingView,
   Platform,
@@ -55,12 +56,13 @@ export default function HomeScreen() {
   const [customDurationInput, setCustomDurationInput] = useState('');
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // Auto-default warmup/cooldown based on duration threshold
-  useEffect(() => {
-    const shouldEnable = selectedDuration >= WARMUP_COOLDOWN_THRESHOLD;
+  // Helper to update warmup/cooldown defaults based on duration
+  const updateDurationWithDefaults = useCallback((duration: number) => {
+    setSelectedDuration(duration);
+    const shouldEnable = duration >= WARMUP_COOLDOWN_THRESHOLD;
     setIncludeWarmup(shouldEnable);
     setIncludeCooldown(shouldEnable);
-  }, [selectedDuration, setIncludeWarmup, setIncludeCooldown]);
+  }, [setSelectedDuration, setIncludeWarmup, setIncludeCooldown]);
 
   const equipmentSets = profile?.equipmentSets || [];
   const selectedSet = equipmentSets.find((s) => s.id === selectedEquipmentSetId) ||
@@ -200,15 +202,16 @@ export default function HomeScreen() {
             {DURATION_OPTIONS.map((option) => {
               const isSelected = selectedDuration === option.value && isCustomDuration === false;
               return (
-                <TouchableOpacity
+                <Pressable
                   key={option.value}
-                  style={[
+                  style={({ pressed }) => [
                     styles.durationOption,
                     isSelected && styles.durationOptionSelected,
+                    pressed && styles.durationOptionPressed,
                   ]}
                   onPress={() => {
-                    setSelectedDuration(option.value);
                     setIsCustomDuration(false);
+                    updateDurationWithDefaults(option.value);
                   }}
                 >
                   <Text
@@ -219,14 +222,15 @@ export default function HomeScreen() {
                   >
                     {option.label}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               );
             })}
             {/* Custom Duration Button */}
-            <TouchableOpacity
-              style={[
+            <Pressable
+              style={({ pressed }) => [
                 styles.durationOption,
                 isCustomDuration && styles.durationOptionSelected,
+                pressed && styles.durationOptionPressed,
               ]}
               onPress={() => {
                 setCustomDurationInput(isCustomDuration ? String(selectedDuration) : '');
@@ -240,7 +244,7 @@ export default function HomeScreen() {
               ) : (
                 <Ionicons name="add" size={20} color={colors.textSecondary} />
               )}
-            </TouchableOpacity>
+            </Pressable>
           </View>
 
           {/* Warmup/Cooldown Toggles */}
@@ -440,6 +444,9 @@ const styles = StyleSheet.create({
   },
   durationOptionSelected: {
     backgroundColor: colors.primary,
+  },
+  durationOptionPressed: {
+    opacity: 0.7,
   },
   durationValue: {
     fontSize: typography.sm,

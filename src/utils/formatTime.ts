@@ -62,3 +62,18 @@ export function formatDateFull(dateString: string): string {
     minute: '2-digit',
   });
 }
+
+export function formatCompactNumber(value: number): string {
+  if (value < 1000) {
+    return value.toString();
+  }
+  const compact = value / 1000;
+  if (compact >= 10) {
+    // 10k+: no decimal to keep max 3 chars (10k, 15k, 100k)
+    return `${Math.round(compact)}k`;
+  }
+  // 1k-9.9k: one decimal, drop trailing .0 (1.3k, 5k)
+  const formatted = compact.toFixed(1);
+  const cleaned = formatted.endsWith('.0') ? formatted.slice(0, -2) : formatted;
+  return `${cleaned}k`;
+}

@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
+import React, { useMemo, useState, useCallback } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,7 +7,7 @@ import { Card, Chip } from '@/components/common';
 import { colors, spacing, typography, borderRadius } from '@/theme';
 import { useHistoryStore, useWorkoutStore } from '@/stores';
 import { WorkoutSession } from '@/types/workout';
-import { formatDate, formatDuration, flattenWorkout } from '@/utils';
+import { formatDate, formatDuration, flattenWorkout, formatCompactNumber } from '@/utils';
 import { DIFFICULTY_COLORS } from '@/utils/constants';
 
 function getRpeColor(value: number): string {
@@ -36,6 +36,8 @@ export default function HistoryScreen() {
     router.push(`/workout/edit-feedback?sessionId=${sessionId}`);
   };
 
+  const [refreshing, setRefreshing] = useState(false);
+
   const handleDeleteSession = (session: WorkoutSession) => {
     Alert.alert(
       'Delete Workout',
@@ -51,12 +53,31 @@ export default function HistoryScreen() {
     );
   };
 
-  const stats = {
-    totalWorkouts: history.totalWorkoutsCompleted,
-    totalMinutes: history.totalMinutesWorked,
-    totalCalories: history.totalCaloriesBurned,
-    streak: history.streak.current,
-  };
+  // Compute stats at runtime from sessions (source of truth)
+  const stats = useMemo(() => {
+    const sessions = history.sessions;
+    const totalWorkouts = sessions.filter((s) => s.status === 'completed').length;
+    const totalMinutes = sessions.reduce(
+      (sum, s) => sum + Math.round(s.actualDurationWorked / 60),
+      0
+    );
+    const totalCalories = sessions.reduce(
+      (sum, s) => sum + s.estimatedCaloriesBurned,
+      0
+    );
+    return {
+      totalWorkouts,
+      totalMinutes,
+      totalCalories,
+      streak: history.streak.current,
+    };
+  }, [history.sessions, history.streak.current]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    // Stats are computed from sessions, so just trigger a brief refresh indicator
+    setTimeout(() => setRefreshing(false), 300);
+  }, []);
 
   const renderSession = ({ item }: { item: WorkoutSession }) => {
     const isCompleted = item.status === 'completed';
@@ -115,7 +136,7 @@ export default function HistoryScreen() {
           </View>
           <View style={styles.stat}>
             <Ionicons name="flame-outline" size={16} color={colors.textMuted} />
-            <Text style={styles.statValue}>{item.estimatedCaloriesBurned} cal</Text>
+            <Text style={styles.statValue}>{formatCompactNumber(item.estimatedCaloriesBurned)} cal</Text>
           </View>
           <Chip
             label={item.workout.difficulty}
@@ -180,15 +201,15 @@ export default function HistoryScreen() {
 
       <View style={styles.statsGrid}>
         <View style={styles.statCard}>
-          <Text style={styles.statCardValue}>{stats.totalWorkouts}</Text>
+          <Text style={styles.statCardValue}>{formatCompactNumber(stats.totalWorkouts)}</Text>
           <Text style={styles.statCardLabel} numberOfLines={1}>WODs</Text>
         </View>
         <View style={styles.statCard}>
-          <Text style={styles.statCardValue}>{stats.totalMinutes}</Text>
+          <Text style={styles.statCardValue}>{formatCompactNumber(stats.totalMinutes)}</Text>
           <Text style={styles.statCardLabel} numberOfLines={1}>Mins</Text>
         </View>
         <View style={styles.statCard}>
-          <Text style={styles.statCardValue}>{stats.totalCalories}</Text>
+          <Text style={styles.statCardValue}>{formatCompactNumber(stats.totalCalories)}</Text>
           <Text style={styles.statCardLabel} numberOfLines={1}>Cals</Text>
         </View>
         <View style={styles.statCard}>
@@ -221,6 +242,14 @@ export default function HistoryScreen() {
         ListHeaderComponent={ListHeader}
         ListEmptyComponent={ListEmpty}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
       />
     </View>
   );
