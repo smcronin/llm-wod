@@ -11,7 +11,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
-import { Button, SegmentedProgressBar } from '@/components/common';
+import { Button, SegmentedProgressBar, MarqueeText } from '@/components/common';
 import { colors, spacing, typography } from '@/theme';
 import { useTimerStore, useHistoryStore } from '@/stores';
 import { formatTime, isRestItem, getItemTypeLabel } from '@/utils';
@@ -292,13 +292,23 @@ export default function TimerScreen() {
       {nextItem && nextIsRest && itemAfterNext && (
         <View style={styles.upNext}>
           <Text style={styles.upNextLabel}>UP NEXT</Text>
-          <Text style={styles.upNextName}>{nextItem.name} &bull; {itemAfterNext.name}</Text>
+          <MarqueeText
+            text={`${nextItem.name} • ${itemAfterNext.name}`}
+            style={styles.upNextName}
+            pauseDuration={3000}
+            scrollSpeed={30}
+          />
         </View>
       )}
       {nextItem && !nextIsRest && (
         <View style={styles.upNext}>
           <Text style={styles.upNextLabel}>UP NEXT</Text>
-          <Text style={styles.upNextName}>{nextItem.name}</Text>
+          <MarqueeText
+            text={nextItem.name}
+            style={styles.upNextName}
+            pauseDuration={3000}
+            scrollSpeed={30}
+          />
         </View>
       )}
 
@@ -446,7 +456,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   upNextName: {
-    fontSize: typography.base,
+    fontSize: typography['2xl'],
     fontWeight: typography.semibold,
     color: colors.text,
   },

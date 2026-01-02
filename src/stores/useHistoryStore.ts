@@ -137,12 +137,26 @@ export const useHistoryStore = create<HistoryState>()(
 
       removeSession: (sessionId) =>
         set((state) => {
+          const sessionToRemove = state.history.sessions.find((s) => s.id === sessionId);
           const newSessions = state.history.sessions.filter((s) => s.id !== sessionId);
           const streak = calculateStreak(newSessions);
+
+          // Recalculate totals by subtracting the removed session's values
+          const wasCompleted = sessionToRemove?.status === 'completed';
+          const minutesToRemove = sessionToRemove
+            ? Math.round(sessionToRemove.actualDurationWorked / 60)
+            : 0;
+          const caloriesToRemove = sessionToRemove?.estimatedCaloriesBurned || 0;
+
           return {
             history: {
               ...state.history,
               sessions: newSessions,
+              totalWorkoutsCompleted: wasCompleted
+                ? state.history.totalWorkoutsCompleted - 1
+                : state.history.totalWorkoutsCompleted,
+              totalMinutesWorked: Math.max(0, state.history.totalMinutesWorked - minutesToRemove),
+              totalCaloriesBurned: Math.max(0, state.history.totalCaloriesBurned - caloriesToRemove),
               streak,
             },
           };

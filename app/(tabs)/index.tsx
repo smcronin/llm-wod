@@ -197,28 +197,31 @@ export default function HomeScreen() {
             <Text style={styles.sectionTitle}>Duration</Text>
           </View>
           <View style={styles.durationGrid}>
-            {DURATION_OPTIONS.map((option) => (
-              <TouchableOpacity
-                key={option.value}
-                style={[
-                  styles.durationOption,
-                  selectedDuration === option.value && !isCustomDuration && styles.durationOptionSelected,
-                ]}
-                onPress={() => {
-                  setSelectedDuration(option.value);
-                  setIsCustomDuration(false);
-                }}
-              >
-                <Text
+            {DURATION_OPTIONS.map((option) => {
+              const isSelected = selectedDuration === option.value && isCustomDuration === false;
+              return (
+                <TouchableOpacity
+                  key={option.value}
                   style={[
-                    styles.durationValue,
-                    selectedDuration === option.value && !isCustomDuration && styles.durationValueSelected,
+                    styles.durationOption,
+                    isSelected && styles.durationOptionSelected,
                   ]}
+                  onPress={() => {
+                    setSelectedDuration(option.value);
+                    setIsCustomDuration(false);
+                  }}
                 >
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <Text
+                    style={[
+                      styles.durationValue,
+                      isSelected && styles.durationValueSelected,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
             {/* Custom Duration Button */}
             <TouchableOpacity
               style={[
