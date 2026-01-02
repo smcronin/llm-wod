@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, StyleSheet, ViewStyle } from 'react-native';
-import { borderRadius } from '@/theme';
+import { View, StyleSheet, ViewStyle, useWindowDimensions } from 'react-native';
+import { borderRadius, spacing } from '@/theme';
 import { TimerItem } from '@/types/workout';
 
 interface SegmentedProgressBarProps {
@@ -75,16 +75,22 @@ export function SegmentedProgressBar({
   height = 6,
   style,
 }: SegmentedProgressBarProps) {
+  const { width: windowWidth } = useWindowDimensions();
   const segments = calculateSegments(items);
   const totalItems = items.length;
 
   if (totalItems === 0) return null;
 
+  // Calculate actual available width (screen width minus horizontal margins)
+  // Default margin is spacing.lg (24) on each side
+  const horizontalMargin = spacing.lg;
+  const availableWidth = windowWidth - (horizontalMargin * 2);
+
   return (
-    <View style={[styles.container, { height }, style]}>
+    <View style={[styles.container, { height, width: availableWidth }, style]}>
       {segments.map((segment, index) => {
-        // Calculate this segment's width as a percentage of total items
-        const segmentWidthPercent = (segment.itemCount / totalItems) * 100;
+        // Calculate this segment's width in pixels
+        const segmentWidth = (segment.itemCount / totalItems) * availableWidth;
 
         // Calculate fill percentage within this segment
         let fillPercent = 0;
@@ -104,7 +110,7 @@ export function SegmentedProgressBar({
             style={[
               styles.segment,
               {
-                width: `${segmentWidthPercent}%`,
+                width: segmentWidth,
                 backgroundColor: SEGMENT_TRACK_COLORS[segment.type],
               },
               isFirst && styles.firstSegment,
@@ -131,18 +137,13 @@ export function SegmentedProgressBar({
 
 const styles = StyleSheet.create({
   container: {
-    width: '100%',
     flexDirection: 'row',
     borderRadius: borderRadius.full,
     overflow: 'hidden',
-    flexShrink: 1,
-    flexGrow: 0,
   },
   segment: {
     height: '100%',
     overflow: 'hidden',
-    flexShrink: 0,
-    flexGrow: 0,
   },
   firstSegment: {
     borderTopLeftRadius: borderRadius.full,
