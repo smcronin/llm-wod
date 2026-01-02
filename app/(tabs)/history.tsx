@@ -1,5 +1,5 @@
-import React, { useMemo, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, RefreshControl } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -36,8 +36,6 @@ export default function HistoryScreen() {
     router.push(`/workout/edit-feedback?sessionId=${sessionId}`);
   };
 
-  const [refreshing, setRefreshing] = useState(false);
-
   const handleDeleteSession = (session: WorkoutSession) => {
     Alert.alert(
       'Delete Workout',
@@ -72,12 +70,6 @@ export default function HistoryScreen() {
       streak: history.streak.current,
     };
   }, [history.sessions, history.streak.current]);
-
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    // Stats are computed from sessions, so just trigger a brief refresh indicator
-    setTimeout(() => setRefreshing(false), 300);
-  }, []);
 
   const renderSession = ({ item }: { item: WorkoutSession }) => {
     const isCompleted = item.status === 'completed';
@@ -242,14 +234,6 @@ export default function HistoryScreen() {
         ListHeaderComponent={ListHeader}
         ListEmptyComponent={ListEmpty}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.primary}
-            colors={[colors.primary]}
-          />
-        }
       />
     </View>
   );
