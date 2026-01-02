@@ -11,7 +11,7 @@ export function useTimer(
   options: UseTimerOptions = {}
 ) {
   const { onTick, onComplete, interval = 1000 } = options;
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const startTimer = useCallback(() => {
     if (intervalRef.current) return;

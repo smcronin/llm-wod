@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,16 +6,14 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
-  ActivityIndicator,
   KeyboardAvoidingView,
-  TouchableWithoutFeedback,
-  Keyboard,
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, Chip, Input } from '@/components/common';
+import { CircuitLogo } from '@/components/CircuitLogo';
 import { colors, spacing, typography, borderRadius } from '@/theme';
 import { DURATION_OPTIONS } from '@/utils/constants';
 import { useUserStore, useWorkoutStore, useHistoryStore } from '@/stores';
@@ -45,6 +43,7 @@ export default function HomeScreen() {
   const workoutSummary = useHistoryStore((state) => state.workoutSummary);
 
   const [refreshing, setRefreshing] = useState(false);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const equipmentSets = profile?.equipmentSets || [];
   const selectedSet = equipmentSets.find((s) => s.id === selectedEquipmentSetId) ||
@@ -106,23 +105,28 @@ export default function HomeScreen() {
   };
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <KeyboardAvoidingView
-        style={[styles.container, { paddingTop: insets.top }]}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
+    <KeyboardAvoidingView
+      style={[styles.container, { paddingTop: insets.top }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
       <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollViewContent}
-          showsVerticalScrollIndicator={false}
+        ref={scrollViewRef}
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollViewContent}
+        showsVerticalScrollIndicator={false}
+        keyboardDismissMode="interactive"
+        keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />
         }
       >
         <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>Ready to train?</Text>
-            <Text style={styles.subtitle}>Generate your personalized workout</Text>
+          <View style={styles.logoContainer}>
+            <CircuitLogo size={96} />
+            <View>
+              <Text style={styles.appName}>Circuit</Text>
+              <Text style={styles.subtitle}>AI-Powered Workouts</Text>
+            </View>
           </View>
           <TouchableOpacity
             style={styles.profileButton}
@@ -219,6 +223,11 @@ export default function HomeScreen() {
             blurOnSubmit={true}
             value={customInstructions}
             onChangeText={setCustomInstructions}
+            onFocus={() => {
+              setTimeout(() => {
+                scrollViewRef.current?.scrollToEnd({ animated: true });
+              }, 100);
+            }}
             multiline
             numberOfLines={3}
           />
@@ -243,8 +252,7 @@ export default function HomeScreen() {
           icon={!isGenerating && <Ionicons name="flash" size={20} color={colors.text} />}
         />
       </View>
-      </KeyboardAvoidingView>
-    </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -266,15 +274,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing.xl,
   },
-  greeting: {
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  appName: {
     fontSize: typography['2xl'],
     fontWeight: typography.bold,
     color: colors.text,
   },
   subtitle: {
-    fontSize: typography.base,
+    fontSize: typography.sm,
     color: colors.textSecondary,
-    marginTop: 4,
+    marginTop: 2,
   },
   profileButton: {
     padding: spacing.xs,

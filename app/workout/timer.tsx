@@ -45,8 +45,8 @@ export default function TimerScreen() {
 
   const addSession = useHistoryStore((state) => state.addSession);
 
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const countdownRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const countdownRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   const currentItem = items[currentItemIndex];
