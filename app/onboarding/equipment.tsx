@@ -7,7 +7,7 @@ import { Button, Input } from '@/components/common';
 import { colors, spacing, typography, borderRadius } from '@/theme';
 import { ALL_EQUIPMENT, EQUIPMENT_CATEGORIES, EQUIPMENT_PRESETS } from '@/utils/constants';
 import { useUserStore } from '@/stores';
-import { v4 as uuid } from 'uuid';
+import { uuid } from '@/utils/uuid';
 
 export default function OnboardingEquipment() {
   const router = useRouter();

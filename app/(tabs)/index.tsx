@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   RefreshControl,
   KeyboardAvoidingView,
   Platform,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, Chip, Input } from '@/components/common';
 import { CircuitLogo } from '@/components/CircuitLogo';
 import { colors, spacing, typography, borderRadius } from '@/theme';
-import { DURATION_OPTIONS } from '@/utils/constants';
+import { DURATION_OPTIONS, WARMUP_COOLDOWN_THRESHOLD } from '@/utils/constants';
 import { useUserStore, useWorkoutStore, useHistoryStore } from '@/stores';
 import { generateWorkout, WorkoutSummary } from '@/services/openrouter';
 import { flattenWorkout } from '@/utils';
@@ -38,12 +40,27 @@ export default function HomeScreen() {
     setSelectedDuration,
     customInstructions,
     setCustomInstructions,
+    includeWarmup,
+    setIncludeWarmup,
+    includeCooldown,
+    setIncludeCooldown,
+    isCustomDuration,
+    setIsCustomDuration,
   } = useWorkoutStore();
   const getRecentSessions = useHistoryStore((state) => state.getRecentSessions);
   const workoutSummary = useHistoryStore((state) => state.workoutSummary);
 
   const [refreshing, setRefreshing] = useState(false);
+  const [showCustomDuration, setShowCustomDuration] = useState(false);
+  const [customDurationInput, setCustomDurationInput] = useState('');
   const scrollViewRef = useRef<ScrollView>(null);
+
+  // Auto-default warmup/cooldown based on duration threshold
+  useEffect(() => {
+    const shouldEnable = selectedDuration >= WARMUP_COOLDOWN_THRESHOLD;
+    setIncludeWarmup(shouldEnable);
+    setIncludeCooldown(shouldEnable);
+  }, [selectedDuration, setIncludeWarmup, setIncludeCooldown]);
 
   const equipmentSets = profile?.equipmentSets || [];
   const selectedSet = equipmentSets.find((s) => s.id === selectedEquipmentSetId) ||
@@ -87,6 +104,8 @@ export default function HomeScreen() {
         userAge: profile.age,
         userWeight: profile.weight,
         customInstructions: customInstructions || undefined,
+        includeWarmup,
+        includeCooldown,
       });
 
       const flattened = flattenWorkout(workout);
@@ -183,20 +202,65 @@ export default function HomeScreen() {
                 key={option.value}
                 style={[
                   styles.durationOption,
-                  selectedDuration === option.value && styles.durationOptionSelected,
+                  selectedDuration === option.value && !isCustomDuration && styles.durationOptionSelected,
                 ]}
-                onPress={() => setSelectedDuration(option.value)}
+                onPress={() => {
+                  setSelectedDuration(option.value);
+                  setIsCustomDuration(false);
+                }}
               >
                 <Text
                   style={[
                     styles.durationValue,
-                    selectedDuration === option.value && styles.durationValueSelected,
+                    selectedDuration === option.value && !isCustomDuration && styles.durationValueSelected,
                   ]}
                 >
                   {option.label}
                 </Text>
               </TouchableOpacity>
             ))}
+            {/* Custom Duration Button */}
+            <TouchableOpacity
+              style={[
+                styles.durationOption,
+                isCustomDuration && styles.durationOptionSelected,
+              ]}
+              onPress={() => {
+                setCustomDurationInput(isCustomDuration ? String(selectedDuration) : '');
+                setShowCustomDuration(true);
+              }}
+            >
+              {isCustomDuration ? (
+                <Text style={[styles.durationValue, styles.durationValueSelected]}>
+                  {selectedDuration} min
+                </Text>
+              ) : (
+                <Ionicons name="add" size={20} color={colors.textSecondary} />
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* Warmup/Cooldown Toggles */}
+          <View style={styles.workoutOptionsRow}>
+            <TouchableOpacity
+              style={styles.checkboxRow}
+              onPress={() => setIncludeWarmup(!includeWarmup)}
+            >
+              <View style={[styles.checkbox, includeWarmup && styles.checkboxChecked]}>
+                {includeWarmup && <Ionicons name="checkmark" size={14} color={colors.text} />}
+              </View>
+              <Text style={styles.checkboxLabel}>Warmup</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.checkboxRow}
+              onPress={() => setIncludeCooldown(!includeCooldown)}
+            >
+              <View style={[styles.checkbox, includeCooldown && styles.checkboxChecked]}>
+                {includeCooldown && <Ionicons name="checkmark" size={14} color={colors.text} />}
+              </View>
+              <Text style={styles.checkboxLabel}>Cooldown</Text>
+            </TouchableOpacity>
           </View>
         </Card>
 
@@ -252,6 +316,46 @@ export default function HomeScreen() {
           icon={!isGenerating && <Ionicons name="flash" size={20} color={colors.text} />}
         />
       </View>
+
+      {/* Custom Duration Modal */}
+      <Modal visible={showCustomDuration} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Custom Duration</Text>
+            <TextInput
+              style={styles.customInput}
+              keyboardType="number-pad"
+              placeholder="Minutes"
+              placeholderTextColor={colors.textMuted}
+              value={customDurationInput}
+              onChangeText={setCustomDurationInput}
+              maxLength={3}
+              autoFocus
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.modalButton}
+                onPress={() => setShowCustomDuration(false)}
+              >
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonPrimary]}
+                onPress={() => {
+                  const mins = parseInt(customDurationInput, 10);
+                  if (mins > 0 && mins <= 120) {
+                    setSelectedDuration(mins);
+                    setIsCustomDuration(true);
+                    setShowCustomDuration(false);
+                  }
+                }}
+              >
+                <Text style={[styles.modalButtonText, styles.modalButtonTextPrimary]}>Set</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -366,5 +470,85 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border,
     backgroundColor: colors.background,
+  },
+  workoutOptionsRow: {
+    flexDirection: 'row',
+    gap: spacing.xl,
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: borderRadius.sm,
+    borderWidth: 2,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  checkboxLabel: {
+    fontSize: typography.sm,
+    color: colors.text,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: colors.surface,
+    padding: spacing.xl,
+    borderRadius: borderRadius.lg,
+    width: '80%',
+    maxWidth: 300,
+  },
+  modalTitle: {
+    fontSize: typography.lg,
+    fontWeight: typography.semibold,
+    color: colors.text,
+    marginBottom: spacing.md,
+    textAlign: 'center',
+  },
+  customInput: {
+    backgroundColor: colors.surfaceLight,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    fontSize: typography.xl,
+    color: colors.text,
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    justifyContent: 'flex-end',
+  },
+  modalButton: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.md,
+  },
+  modalButtonPrimary: {
+    backgroundColor: colors.primary,
+  },
+  modalButtonText: {
+    fontSize: typography.sm,
+    fontWeight: typography.semibold,
+    color: colors.textSecondary,
+  },
+  modalButtonTextPrimary: {
+    color: colors.text,
   },
 });

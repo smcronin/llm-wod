@@ -11,7 +11,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
-import { Button, ProgressBar } from '@/components/common';
+import { Button, SegmentedProgressBar } from '@/components/common';
 import { colors, spacing, typography } from '@/theme';
 import { useTimerStore, useHistoryStore } from '@/stores';
 import { formatTime, isRestItem, getItemTypeLabel } from '@/utils';
@@ -53,7 +53,6 @@ export default function TimerScreen() {
   const nextItem = items[currentItemIndex + 1];
   const itemAfterNext = items[currentItemIndex + 2];
   const nextIsRest = nextItem ? isRestItem(nextItem.type) : false;
-  const progress = items.length > 0 ? (currentItemIndex + 1) / items.length : 0;
   const isRest = currentItem ? isRestItem(currentItem.type) : false;
 
   // Side-switching logic
@@ -254,11 +253,10 @@ export default function TimerScreen() {
       </View>
 
       {/* Progress Bar */}
-      <ProgressBar
-        progress={progress}
-        color={colors.text}
-        backgroundColor="rgba(255,255,255,0.2)"
-        height={4}
+      <SegmentedProgressBar
+        items={items}
+        currentItemIndex={currentItemIndex}
+        height={6}
         style={styles.progressBar}
       />
 
@@ -339,9 +337,17 @@ export default function TimerScreen() {
 
       {/* Paused Overlay */}
       {status === 'paused' && (
-        <View style={styles.pausedOverlay}>
-          <Text style={styles.pausedText}>PAUSED</Text>
-          <Text style={styles.pausedSubtext}>Tap play to resume</Text>
+        <View style={[styles.pausedOverlay, { paddingTop: insets.top }]}>
+          <TouchableOpacity
+            onPress={handleStop}
+            style={[styles.closeButton, styles.pausedCloseButton]}
+          >
+            <Ionicons name="close" size={28} color={colors.text} />
+          </TouchableOpacity>
+          <View style={styles.pausedContent}>
+            <Text style={styles.pausedText}>PAUSED</Text>
+            <Text style={styles.pausedSubtext}>Tap play to resume</Text>
+          </View>
         </View>
       )}
     </View>
@@ -493,9 +499,17 @@ const styles = StyleSheet.create({
   pausedOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.7)',
+    zIndex: 5,
+  },
+  pausedCloseButton: {
+    position: 'absolute',
+    top: spacing.md,
+    left: spacing.md,
+  },
+  pausedContent: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 5,
   },
   pausedText: {
     fontSize: typography['4xl'],

@@ -86,6 +86,7 @@ export const EQUIPMENT_PRESETS = {
 };
 
 export const DURATION_OPTIONS = [
+  { value: 5, label: '5 min', description: 'Quick burst' },
   { value: 10, label: '10 min', description: 'Quick burst' },
   { value: 15, label: '15 min', description: 'Short & sweet' },
   { value: 20, label: '20 min', description: 'Focused session' },
@@ -94,6 +95,8 @@ export const DURATION_OPTIONS = [
   { value: 45, label: '45 min', description: 'Extended' },
   { value: 60, label: '60 min', description: 'Full session' },
 ];
+
+export const WARMUP_COOLDOWN_THRESHOLD = 20; // minutes - warmup/cooldown default ON at/above this
 
 export const GOAL_SUGGESTIONS = [
   'Build muscle and strength',

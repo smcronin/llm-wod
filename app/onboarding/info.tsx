@@ -27,6 +27,7 @@ export default function OnboardingInfo() {
 
   const [age, setAge] = useState(profile?.age?.toString() || '');
   const [weight, setWeight] = useState(profile?.weight?.toString() || '');
+  const [goalWeight, setGoalWeight] = useState(profile?.goalWeight?.toString() || '');
   const [weightUnit, setWeightUnit] = useState<'lbs' | 'kg'>(profile?.weightUnit || 'lbs');
   const [preferredDuration, setPreferredDuration] = useState(
     profile?.preferredWorkoutDuration || 30
@@ -36,6 +37,7 @@ export default function OnboardingInfo() {
     updateProfile({
       age: age ? parseInt(age, 10) : undefined,
       weight: weight ? parseFloat(weight) : undefined,
+      goalWeight: goalWeight ? parseFloat(goalWeight) : undefined,
       weightUnit,
       preferredWorkoutDuration: preferredDuration,
     });
@@ -88,16 +90,13 @@ export default function OnboardingInfo() {
           <View style={styles.weightRow}>
             <View style={styles.weightInput}>
               <Input
-                label="Weight"
+                label="Current Weight"
                 placeholder="Enter weight"
                 value={weight}
                 onChangeText={(text) => setWeight(text.replace(/[^0-9.]/g, ''))}
                 keyboardType="decimal-pad"
-
                 returnKeyType="done"
-
                 onSubmitEditing={Keyboard.dismiss}
-
               />
             </View>
             <View style={styles.unitToggle}>
@@ -126,6 +125,17 @@ export default function OnboardingInfo() {
               </View>
             </View>
           </View>
+
+          <Input
+            label={`Goal Weight (${weightUnit})`}
+            placeholder="Enter your goal weight"
+            value={goalWeight}
+            onChangeText={(text) => setGoalWeight(text.replace(/[^0-9.]/g, ''))}
+            keyboardType="decimal-pad"
+            returnKeyType="done"
+            onSubmitEditing={Keyboard.dismiss}
+            containerStyle={styles.inputContainer}
+          />
 
           <View style={styles.durationSection}>
             <Text style={styles.durationLabel}>Preferred workout duration</Text>

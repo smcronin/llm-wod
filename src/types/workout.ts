@@ -61,6 +61,7 @@ export interface GeneratedWorkout {
   warmUp: WarmUpSection;
   circuits: Circuit[];
   coolDown: CoolDownSection;
+  restBetweenCircuits: number; // seconds, transition time between circuits
   estimatedCalories: number;
   calorieRange: { low: number; high: number };
   focusAreas: string[];
@@ -76,7 +77,8 @@ export type TimerItemType =
   | 'circuit_exercise'
   | 'cooldown_exercise'
   | 'exercise_rest'
-  | 'round_rest';
+  | 'round_rest'
+  | 'circuit_rest';
 
 export interface TimerItem {
   id: string;
@@ -147,6 +149,7 @@ export interface UserProfile {
   createdAt: string;
   age?: number;
   weight?: number;
+  goalWeight?: number;
   weightUnit: 'lbs' | 'kg';
   fitnessGoals: string;
   trainingNotes?: string; // Free-text for abilities, preferences, injuries, etc.

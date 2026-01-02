@@ -2,10 +2,10 @@ const OPENROUTER_API_KEY = process.env.EXPO_PUBLIC_OPENROUTER_API_KEY;
 import { LLMWorkoutResponse } from '@/types/llm';
 import { GeneratedWorkout, Exercise, Circuit, WarmUpSection, CoolDownSection } from '@/types/workout';
 import { buildPrompt, getSystemPrompt, GenerationContext } from './prompts';
-import { v4 as uuid } from 'uuid';
+import { uuid } from '@/utils/uuid';
 
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
-const MODEL = 'google/gemini-2.0-flash-001';
+const MODEL = 'google/gemini-3-flash-preview';
 
 export async function generateWorkout(
   context: GenerationContext
@@ -44,11 +44,15 @@ export async function generateWorkout(
     throw new Error('No content in response');
   }
 
-  const llmResponse = parseAndValidateResponse(content);
+  const llmResponse = parseAndValidateResponse(content, context.includeWarmup, context.includeCooldown);
   return transformToGeneratedWorkout(llmResponse, context);
 }
 
-function parseAndValidateResponse(content: string): LLMWorkoutResponse {
+function parseAndValidateResponse(
+  content: string,
+  includeWarmup: boolean,
+  includeCooldown: boolean
+): LLMWorkoutResponse {
   let parsed: LLMWorkoutResponse;
 
   try {
@@ -70,8 +74,11 @@ function parseAndValidateResponse(content: string): LLMWorkoutResponse {
     }
   }
 
-  // Validate required fields
-  const requiredFields = ['name', 'warmUp', 'circuits', 'coolDown'];
+  // Validate required fields - warmUp/coolDown only required if requested
+  const requiredFields = ['name', 'circuits'];
+  if (includeWarmup) requiredFields.push('warmUp');
+  if (includeCooldown) requiredFields.push('coolDown');
+
   for (const field of requiredFields) {
     if (!(field in parsed)) {
       throw new Error(`Missing required field: ${field}`);
@@ -87,20 +94,24 @@ function transformToGeneratedWorkout(
 ): GeneratedWorkout {
   const workoutId = uuid();
 
-  // Transform warm-up exercises
-  const warmUpExercises: Exercise[] = llm.warmUp.exercises.map((e) => ({
-    id: uuid(),
-    name: e.name,
-    duration: e.duration,
-    description: e.description,
-    muscleGroups: e.muscleGroups,
-  }));
-
-  const warmUp: WarmUpSection = {
-    type: 'warmup',
-    exercises: warmUpExercises,
-    totalDuration: warmUpExercises.reduce((sum, e) => sum + e.duration, 0),
-  };
+  // Transform warm-up exercises (or create empty section if not included)
+  let warmUp: WarmUpSection;
+  if (llm.warmUp && llm.warmUp.exercises.length > 0) {
+    const warmUpExercises: Exercise[] = llm.warmUp.exercises.map((e) => ({
+      id: uuid(),
+      name: e.name,
+      duration: e.duration,
+      description: e.description,
+      muscleGroups: e.muscleGroups,
+    }));
+    warmUp = {
+      type: 'warmup',
+      exercises: warmUpExercises,
+      totalDuration: warmUpExercises.reduce((sum, e) => sum + e.duration, 0),
+    };
+  } else {
+    warmUp = { type: 'warmup', exercises: [], totalDuration: 0 };
+  }
 
   // Transform circuits
   const circuits: Circuit[] = llm.circuits.map((c) => {
@@ -134,25 +145,34 @@ function transformToGeneratedWorkout(
     };
   });
 
-  // Transform cool-down exercises
-  const coolDownExercises: Exercise[] = llm.coolDown.exercises.map((e) => ({
-    id: uuid(),
-    name: e.name,
-    duration: e.duration,
-    description: e.description,
-    muscleGroups: e.muscleGroups,
-  }));
+  // Transform cool-down exercises (or create empty section if not included)
+  let coolDown: CoolDownSection;
+  if (llm.coolDown && llm.coolDown.exercises.length > 0) {
+    const coolDownExercises: Exercise[] = llm.coolDown.exercises.map((e) => ({
+      id: uuid(),
+      name: e.name,
+      duration: e.duration,
+      description: e.description,
+      muscleGroups: e.muscleGroups,
+    }));
+    coolDown = {
+      type: 'cooldown',
+      exercises: coolDownExercises,
+      totalDuration: coolDownExercises.reduce((sum, e) => sum + e.duration, 0),
+    };
+  } else {
+    coolDown = { type: 'cooldown', exercises: [], totalDuration: 0 };
+  }
 
-  const coolDown: CoolDownSection = {
-    type: 'cooldown',
-    exercises: coolDownExercises,
-    totalDuration: coolDownExercises.reduce((sum, e) => sum + e.duration, 0),
-  };
+  // Rest between circuits (default to 30 seconds if not provided)
+  const restBetweenCircuits = llm.restBetweenCircuits || 30;
 
-  // Calculate total duration
+  // Calculate total duration (including rest between circuits)
+  const circuitRestTotal = circuits.length > 1 ? (circuits.length - 1) * restBetweenCircuits : 0;
   const actualDuration =
     warmUp.totalDuration +
     circuits.reduce((sum, c) => sum + c.totalDuration, 0) +
+    circuitRestTotal +
     coolDown.totalDuration;
 
   return {
@@ -168,6 +188,7 @@ function transformToGeneratedWorkout(
     warmUp,
     circuits,
     coolDown,
+    restBetweenCircuits,
     estimatedCalories: llm.estimatedCalories || Math.round(actualDuration / 60 * 8),
     calorieRange: llm.calorieRange || {
       low: Math.round(actualDuration / 60 * 5),

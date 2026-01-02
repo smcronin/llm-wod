@@ -17,7 +17,7 @@ import { useWorkoutStore, useTimerStore, useUserStore, useHistoryStore } from '@
 import { flattenWorkout, formatDuration, formatTimeVerbose } from '@/utils';
 import { generateWorkout, WorkoutSummary } from '@/services/openrouter';
 import { DIFFICULTY_COLORS } from '@/utils/constants';
-import { v4 as uuid } from 'uuid';
+import { uuid } from '@/utils/uuid';
 
 export default function WorkoutReviewScreen() {
   const router = useRouter();
@@ -34,6 +34,8 @@ export default function WorkoutReviewScreen() {
     setFlattenedWorkout,
     setGenerationError,
     selectedDuration,
+    includeWarmup,
+    includeCooldown,
   } = useWorkoutStore();
   const initializeTimer = useTimerStore((state) => state.initializeTimer);
   const profile = useUserStore((state) => state.profile);
@@ -101,6 +103,8 @@ export default function WorkoutReviewScreen() {
         userAge: profile.age,
         userWeight: profile.weight,
         feedback: feedbackMessage.trim(),
+        includeWarmup,
+        includeCooldown,
       });
 
       const flattened = flattenWorkout(workout);
@@ -165,23 +169,25 @@ export default function WorkoutReviewScreen() {
           )}
         </View>
 
-        {/* Warm Up */}
-        <Card style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={[styles.sectionIcon, { backgroundColor: colors.success + '20' }]}>
-              <Ionicons name="sunny-outline" size={18} color={colors.success} />
+        {/* Warm Up - only show if exercises exist */}
+        {currentWorkout.warmUp.exercises.length > 0 && (
+          <Card style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <View style={[styles.sectionIcon, { backgroundColor: colors.success + '20' }]}>
+                <Ionicons name="sunny-outline" size={18} color={colors.success} />
+              </View>
+              <View style={styles.sectionTitleContainer}>
+                <Text style={styles.sectionTitle}>Warm Up</Text>
+              </View>
+              <Text style={styles.sectionDuration}>
+                {formatTimeVerbose(currentWorkout.warmUp.totalDuration)}
+              </Text>
             </View>
-            <View style={styles.sectionTitleContainer}>
-              <Text style={styles.sectionTitle}>Warm Up</Text>
-            </View>
-            <Text style={styles.sectionDuration}>
-              {formatTimeVerbose(currentWorkout.warmUp.totalDuration)}
-            </Text>
-          </View>
-          {currentWorkout.warmUp.exercises.map((exercise, idx) => (
-            <ExerciseRow key={exercise.id} exercise={exercise} index={idx} forceExpand={expandAll} />
-          ))}
-        </Card>
+            {currentWorkout.warmUp.exercises.map((exercise, idx) => (
+              <ExerciseRow key={exercise.id} exercise={exercise} index={idx} forceExpand={expandAll} />
+            ))}
+          </Card>
+        )}
 
         {/* Circuits */}
         {currentWorkout.circuits.map((circuit, circuitIdx) => (
@@ -206,23 +212,25 @@ export default function WorkoutReviewScreen() {
           </Card>
         ))}
 
-        {/* Cool Down */}
-        <Card style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={[styles.sectionIcon, { backgroundColor: colors.timerRest + '20' }]}>
-              <Ionicons name="moon-outline" size={18} color={colors.timerRest} />
+        {/* Cool Down - only show if exercises exist */}
+        {currentWorkout.coolDown.exercises.length > 0 && (
+          <Card style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <View style={[styles.sectionIcon, { backgroundColor: colors.timerRest + '20' }]}>
+                <Ionicons name="moon-outline" size={18} color={colors.timerRest} />
+              </View>
+              <View style={styles.sectionTitleContainer}>
+                <Text style={styles.sectionTitle}>Cool Down</Text>
+              </View>
+              <Text style={styles.sectionDuration}>
+                {formatTimeVerbose(currentWorkout.coolDown.totalDuration)}
+              </Text>
             </View>
-            <View style={styles.sectionTitleContainer}>
-              <Text style={styles.sectionTitle}>Cool Down</Text>
-            </View>
-            <Text style={styles.sectionDuration}>
-              {formatTimeVerbose(currentWorkout.coolDown.totalDuration)}
-            </Text>
-          </View>
-          {currentWorkout.coolDown.exercises.map((exercise, idx) => (
-            <ExerciseRow key={exercise.id} exercise={exercise} index={idx} forceExpand={expandAll} />
-          ))}
-        </Card>
+            {currentWorkout.coolDown.exercises.map((exercise, idx) => (
+              <ExerciseRow key={exercise.id} exercise={exercise} index={idx} forceExpand={expandAll} />
+            ))}
+          </Card>
+        )}
 
         {/* Feedback Section */}
         <Card style={styles.feedbackSection}>

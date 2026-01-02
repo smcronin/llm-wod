@@ -3,4 +3,5 @@ export { Card } from './Card';
 export { Input } from './Input';
 export { Chip } from './Chip';
 export { ProgressBar } from './ProgressBar';
+export { SegmentedProgressBar } from './SegmentedProgressBar';
 export { Header } from './Header';

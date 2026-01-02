@@ -7,7 +7,7 @@ import { Button, Input } from '@/components/common';
 import { colors, spacing, typography, borderRadius } from '@/theme';
 import { GOAL_SUGGESTIONS } from '@/utils/constants';
 import { useUserStore } from '@/stores';
-import { v4 as uuid } from 'uuid';
+import { uuid } from '@/utils/uuid';
 
 export default function OnboardingGoals() {
   const router = useRouter();

@@ -1,23 +1,36 @@
 import { GeneratedWorkout, FlattenedWorkout, TimerItem } from '@/types/workout';
-import { v4 as uuid } from 'uuid';
+import { uuid } from './uuid';
 
 export function flattenWorkout(workout: GeneratedWorkout): FlattenedWorkout {
   const items: TimerItem[] = [];
 
-  // Add warm-up exercises
-  workout.warmUp.exercises.forEach((exercise, index) => {
-    items.push({
-      id: uuid(),
-      type: 'warmup_exercise',
-      name: exercise.name,
-      duration: exercise.duration,
-      exercise,
-      exerciseIndex: index,
+  // Add warm-up exercises (only if there are any)
+  if (workout.warmUp.exercises.length > 0) {
+    workout.warmUp.exercises.forEach((exercise, index) => {
+      items.push({
+        id: uuid(),
+        type: 'warmup_exercise',
+        name: exercise.name,
+        duration: exercise.duration,
+        exercise,
+        exerciseIndex: index,
+      });
     });
-  });
+  }
 
   // Add circuits
   workout.circuits.forEach((circuit, circuitIndex) => {
+    // Add rest between circuits (except before first circuit)
+    if (circuitIndex > 0 && workout.restBetweenCircuits > 0) {
+      items.push({
+        id: uuid(),
+        type: 'circuit_rest',
+        name: `Circuit ${circuitIndex} Complete`,
+        duration: workout.restBetweenCircuits,
+        circuitIndex: circuitIndex - 1,
+      });
+    }
+
     for (let round = 0; round < circuit.rounds; round++) {
       circuit.exercises.forEach((exercise, exerciseIndex) => {
         // Add exercise
@@ -62,17 +75,19 @@ export function flattenWorkout(workout: GeneratedWorkout): FlattenedWorkout {
     }
   });
 
-  // Add cool-down exercises
-  workout.coolDown.exercises.forEach((exercise, index) => {
-    items.push({
-      id: uuid(),
-      type: 'cooldown_exercise',
-      name: exercise.name,
-      duration: exercise.duration,
-      exercise,
-      exerciseIndex: index,
+  // Add cool-down exercises (only if there are any)
+  if (workout.coolDown.exercises.length > 0) {
+    workout.coolDown.exercises.forEach((exercise, index) => {
+      items.push({
+        id: uuid(),
+        type: 'cooldown_exercise',
+        name: exercise.name,
+        duration: exercise.duration,
+        exercise,
+        exerciseIndex: index,
+      });
     });
-  });
+  }
 
   const totalDuration = items.reduce((sum, item) => sum + item.duration, 0);
 
@@ -96,11 +111,13 @@ export function getItemTypeLabel(type: TimerItem['type']): string {
       return 'REST';
     case 'round_rest':
       return 'ROUND REST';
+    case 'circuit_rest':
+      return 'CIRCUIT REST';
     default:
       return '';
   }
 }
 
 export function isRestItem(type: TimerItem['type']): boolean {
-  return type === 'exercise_rest' || type === 'round_rest';
+  return type === 'exercise_rest' || type === 'round_rest' || type === 'circuit_rest';
 }

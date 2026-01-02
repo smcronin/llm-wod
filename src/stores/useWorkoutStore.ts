@@ -10,6 +10,9 @@ interface WorkoutState {
   selectedEquipmentSetId: string | null;
   selectedDuration: number;
   customInstructions: string;
+  includeWarmup: boolean;
+  includeCooldown: boolean;
+  isCustomDuration: boolean;
 
   setCurrentWorkout: (workout: GeneratedWorkout) => void;
   setFlattenedWorkout: (workout: FlattenedWorkout) => void;
@@ -21,6 +24,9 @@ interface WorkoutState {
   setSelectedEquipmentSetId: (id: string | null) => void;
   setSelectedDuration: (duration: number) => void;
   setCustomInstructions: (instructions: string) => void;
+  setIncludeWarmup: (include: boolean) => void;
+  setIncludeCooldown: (include: boolean) => void;
+  setIsCustomDuration: (isCustom: boolean) => void;
 }
 
 export const useWorkoutStore = create<WorkoutState>((set) => ({
@@ -32,6 +38,9 @@ export const useWorkoutStore = create<WorkoutState>((set) => ({
   selectedEquipmentSetId: null,
   selectedDuration: 30,
   customInstructions: '',
+  includeWarmup: true,
+  includeCooldown: true,
+  isCustomDuration: false,
 
   setCurrentWorkout: (workout) => set({ currentWorkout: workout }),
   setFlattenedWorkout: (workout) => set({ flattenedWorkout: workout }),
@@ -49,4 +58,7 @@ export const useWorkoutStore = create<WorkoutState>((set) => ({
   setSelectedEquipmentSetId: (id) => set({ selectedEquipmentSetId: id }),
   setSelectedDuration: (duration) => set({ selectedDuration: duration }),
   setCustomInstructions: (instructions) => set({ customInstructions: instructions }),
+  setIncludeWarmup: (include) => set({ includeWarmup: include }),
+  setIncludeCooldown: (include) => set({ includeCooldown: include }),
+  setIsCustomDuration: (isCustom) => set({ isCustomDuration: isCustom }),
 }));

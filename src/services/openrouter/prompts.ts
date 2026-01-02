@@ -12,6 +12,8 @@ export interface GenerationContext {
   userWeight?: number;
   feedback?: string;
   customInstructions?: string;
+  includeWarmup: boolean;
+  includeCooldown: boolean;
 }
 
 export function getSystemPrompt(): string {
@@ -20,10 +22,10 @@ export function getSystemPrompt(): string {
 IMPORTANT: You must respond with valid JSON that matches the exact schema provided. Do not include any text outside the JSON.
 
 Guidelines for workout design:
-1. Always include a warm-up (3-5 minutes) with dynamic movements
+1. Include a warm-up (3-5 minutes) with dynamic movements when requested
 2. Design circuits that match the user's available time and equipment
 3. Include appropriate rest periods (15-30s between exercises, 60-90s between rounds)
-4. Cool-down should include stretches for worked muscle groups (2-4 minutes)
+4. Include cool-down stretches for worked muscle groups (2-4 minutes) when requested
 5. Exercise durations should be realistic (30-60 seconds per exercise)
 6. Rep targets should be achievable in the given time
 7. Provide progressive overload by varying from recent workouts
@@ -61,6 +63,8 @@ export function buildPrompt(context: GenerationContext): string {
     userWeight,
     feedback,
     customInstructions,
+    includeWarmup,
+    includeCooldown,
   } = context;
 
   let prompt = `Create a ${requestedDuration}-minute workout with the following constraints:
@@ -134,7 +138,64 @@ You MUST follow these custom instructions when designing this workout.
 `;
   }
 
+  // Calculate timing based on included sections
+  const warmupTime = includeWarmup ? 4 : 0; // avg 3-5 min
+  const cooldownTime = includeCooldown ? 3 : 0; // avg 2-4 min
+  const mainWorkoutTime = Math.max(requestedDuration - warmupTime - cooldownTime, requestedDuration * 0.8);
+
+  // Build warmup schema section
+  const warmupSchema = includeWarmup
+    ? `
+  "warmUp": {
+    "exercises": [
+      {
+        "name": "string",
+        "duration": number (seconds, typically 30-45),
+        "description": "string - clear instructions on how to perform",
+        "muscleGroups": ["string"]
+      }
+    ]
+  },`
+    : '';
+
+  // Build cooldown schema section
+  const cooldownSchema = includeCooldown
+    ? `
+  "coolDown": {
+    "exercises": [
+      {
+        "name": "string",
+        "duration": number (seconds, typically 30-45),
+        "description": "string - stretching/breathing cues",
+        "muscleGroups": ["string"]
+      }
+    ]
+  }`
+    : '';
+
+  // Build timing rules
+  const timingRules = [
+    `- Total workout time should be close to ${requestedDuration} minutes`,
+    includeWarmup ? '- Warm-up: 3-5 minutes' : '- No warm-up section',
+    `- Main circuits: ~${Math.round(mainWorkoutTime)} minutes`,
+    includeCooldown ? '- Cool-down: 2-4 minutes' : '- No cool-down section',
+    '- Account for all rest periods in your time calculation',
+  ].join('\n');
+
+  // Build structure requirements
+  const structureReqs = [
+    includeWarmup
+      ? '- Include a warm-up section (3-5 minutes) with dynamic movements to prepare the body'
+      : '- DO NOT include a warmUp section - start directly with circuits',
+    includeCooldown
+      ? '- Include a cool-down section (2-4 minutes) with stretches for worked muscle groups'
+      : '- DO NOT include a coolDown section - end with the final circuit',
+  ].join('\n');
+
   prompt += `
+STRUCTURE REQUIREMENTS:
+${structureReqs}
+
 Return a JSON object with this exact structure:
 {
   "name": "string - creative workout name (e.g., 'Full Body Blitz', 'Core Crusher')",
@@ -145,18 +206,8 @@ Return a JSON object with this exact structure:
   "focusAreas": ["strength", "cardio", "flexibility", "core", "upper body", "lower body", etc.],
   "muscleGroupsTargeted": ["chest", "back", "shoulders", "biceps", "triceps", "core", "quads", "hamstrings", "glutes", "calves"],
   "equipmentRequired": ["dumbbell", etc. or empty array for bodyweight],
-
-  "warmUp": {
-    "exercises": [
-      {
-        "name": "string",
-        "duration": number (seconds, typically 30-45),
-        "description": "string - clear instructions on how to perform",
-        "muscleGroups": ["string"]
-      }
-    ]
-  },
-
+  "restBetweenCircuits": number (seconds, typically 30-60, allows transition between circuits),
+${warmupSchema}
   "circuits": [
     {
       "name": "string (e.g., 'Power Circuit', 'Burn Zone')",
@@ -179,26 +230,12 @@ Return a JSON object with this exact structure:
         }
       ]
     }
-  ],
-
-  "coolDown": {
-    "exercises": [
-      {
-        "name": "string",
-        "duration": number (seconds, typically 30-45),
-        "description": "string - stretching/breathing cues",
-        "muscleGroups": ["string"]
-      }
-    ]
-  }
+  ]${includeCooldown ? ',' : ''}
+${cooldownSchema}
 }
 
 IMPORTANT TIMING RULES:
-- Total workout time should be close to ${requestedDuration} minutes
-- Warm-up: 3-5 minutes
-- Main circuits: ${Math.max(requestedDuration - 8, 10)} minutes
-- Cool-down: 2-4 minutes
-- Account for all rest periods in your time calculation`;
+${timingRules}`;
 
   return prompt;
 }

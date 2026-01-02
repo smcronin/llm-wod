@@ -17,7 +17,7 @@ import { Button, Card, Input } from '@/components/common';
 import { colors, spacing, typography, borderRadius } from '@/theme';
 import { useUserStore, useHistoryStore } from '@/stores';
 import { ALL_EQUIPMENT } from '@/utils/constants';
-import { v4 as uuid } from 'uuid';
+import { uuid } from '@/utils/uuid';
 import { summarizeWorkoutHistory } from '@/services/openrouter';
 import { exportAllData, importAllData, getDataStats } from '@/utils/dataTransfer';
 

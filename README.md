@@ -161,9 +161,10 @@ OPENAI_API_KEY=your_key_here
 
 ## License
 
-This project is licensed under a **Non-Commercial Open Source License**.
+This project is licensed under the [PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0/).
 
-- Free for personal and non-commercial use
+- Free for personal, educational, research, and non-commercial use
+- Charitable organizations, educational institutions, and government entities may use freely
 - Commercial use requires a separate license
 
 See the [LICENSE](LICENSE) file for details. For commercial licensing inquiries, contact: **sethcronin@gmail.com**

@@ -35,8 +35,9 @@ export interface LLMWorkoutResponse {
   focusAreas: string[];
   muscleGroupsTargeted: string[];
   equipmentRequired: string[];
+  restBetweenCircuits?: number; // seconds, transition time between circuits
 
-  warmUp: {
+  warmUp?: {
     exercises: Array<{
       name: string;
       duration: number;
@@ -65,7 +66,7 @@ export interface LLMWorkoutResponse {
     }>;
   }>;
 
-  coolDown: {
+  coolDown?: {
     exercises: Array<{
       name: string;
       duration: number;

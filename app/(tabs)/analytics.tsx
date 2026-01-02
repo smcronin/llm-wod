@@ -113,10 +113,14 @@ const WeightGraph = ({
   entries,
   showFullHistory,
   onToggleHistory,
+  goalWeight,
+  weightUnit,
 }: {
   entries: WeightEntry[];
   showFullHistory: boolean;
   onToggleHistory: () => void;
+  goalWeight?: number;
+  weightUnit: string;
 }) => {
   // Deduplicate entries by date - keep only last entry per day
   const entriesByDate = useMemo(() => {
@@ -166,12 +170,19 @@ const WeightGraph = ({
   }
 
   const weights = pointsWithData.map((p) => p.weight);
-  const minWeight = Math.min(...weights) - 2;
-  const maxWeight = Math.max(...weights) + 2;
+  // Include goal weight in min/max so it's always visible on the graph
+  const allWeights = goalWeight ? [...weights, goalWeight] : weights;
+  const minWeight = Math.min(...allWeights) - 2;
+  const maxWeight = Math.max(...allWeights) + 2;
   const range = maxWeight - minWeight || 1;
 
   const graphWidth = SCREEN_WIDTH - spacing.lg * 2 - spacing.md * 2 - 40;
   const graphHeight = 100;
+
+  // Calculate goal weight line position
+  const goalWeightY = goalWeight
+    ? graphHeight - ((goalWeight - minWeight) / range) * graphHeight
+    : null;
 
   return (
     <View>
@@ -189,6 +200,16 @@ const WeightGraph = ({
           <View style={[styles.gridLine, { top: 0 }]} />
           <View style={[styles.gridLine, { top: graphHeight / 2 }]} />
           <View style={[styles.gridLine, { bottom: 0 }]} />
+
+          {/* Goal weight dashed line */}
+          {goalWeightY !== null && goalWeightY >= 0 && goalWeightY <= graphHeight && (
+            <View style={[styles.goalWeightLine, { top: goalWeightY }]}>
+              <View style={styles.goalWeightDashes} />
+              <View style={styles.goalWeightLabel}>
+                <Text style={styles.goalWeightLabelText}>Goal: {goalWeight}</Text>
+              </View>
+            </View>
+          )}
 
           {/* Lines connecting points */}
           {pointsWithData.length > 1 &&

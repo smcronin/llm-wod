@@ -27,17 +27,17 @@ export default function OnboardingWelcome() {
 
         <View style={styles.features}>
           <FeatureItem
-            icon="sparkles"
+            icon="flash"
             title="Smart Generation"
             description="AI creates personalized workouts based on your goals"
           />
           <FeatureItem
-            icon="timer"
+            icon="time"
             title="Guided Timer"
             description="Follow along with automatic exercise timing"
           />
           <FeatureItem
-            icon="trending-up"
+            icon="stats-chart"
             title="Progress Tracking"
             description="Track your workout history and improvements"
           />
