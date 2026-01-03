@@ -7,6 +7,7 @@ interface UserState {
   profile: UserProfile | null;
   isLoading: boolean;
   savedCustomInstructions: string[];
+  isAudioMuted: boolean;
   setProfile: (profile: UserProfile) => void;
   updateProfile: (updates: Partial<UserProfile>) => void;
   addEquipmentSet: (set: EquipmentSet) => void;
@@ -17,6 +18,7 @@ interface UserState {
   resetOnboarding: () => void;
   addCustomInstruction: (instruction: string) => void;
   clearCustomInstructions: () => void;
+  toggleAudioMute: () => void;
 }
 
 export const useUserStore = create<UserState>()(
@@ -25,6 +27,7 @@ export const useUserStore = create<UserState>()(
       profile: null,
       isLoading: false,
       savedCustomInstructions: [],
+      isAudioMuted: false,
 
       setProfile: (profile) => set({ profile }),
 
@@ -106,6 +109,9 @@ export const useUserStore = create<UserState>()(
         }),
 
       clearCustomInstructions: () => set({ savedCustomInstructions: [] }),
+
+      toggleAudioMute: () =>
+        set((state) => ({ isAudioMuted: !state.isAudioMuted })),
     }),
     {
       name: 'user-storage',

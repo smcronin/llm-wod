@@ -72,6 +72,10 @@ class SoundManager {
     this.audioEnabled = enabled;
   }
 
+  isAudioEnabled(): boolean {
+    return this.audioEnabled;
+  }
+
   private async playSound(name: SoundName): Promise<void> {
     if (!this.audioEnabled) return;
 

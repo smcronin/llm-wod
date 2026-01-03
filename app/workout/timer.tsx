@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { Button, SegmentedProgressBar, MarqueeText, VerticalAutoScroll } from '@/components/common';
 import { colors, spacing, typography } from '@/theme';
-import { useTimerStore, useHistoryStore } from '@/stores';
+import { useTimerStore, useHistoryStore, useUserStore } from '@/stores';
 import { formatTime, isRestItem, getItemTypeLabel } from '@/utils';
 import { soundManager } from '@/services/audio';
 
@@ -46,6 +46,13 @@ export default function TimerScreen() {
   } = useTimerStore();
 
   const addSession = useHistoryStore((state) => state.addSession);
+  const isAudioMuted = useUserStore((state) => state.isAudioMuted);
+  const toggleAudioMute = useUserStore((state) => state.toggleAudioMute);
+
+  // Sync audio mute state with sound manager
+  useEffect(() => {
+    soundManager.setAudioEnabled(!isAudioMuted);
+  }, [isAudioMuted]);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -287,7 +294,13 @@ export default function TimerScreen() {
             {currentItemIndex + 1} / {items.length}
           </Text>
         </View>
-        <View style={styles.closeButton} />
+        <TouchableOpacity onPress={toggleAudioMute} style={styles.closeButton}>
+          <Ionicons
+            name={isAudioMuted ? 'volume-mute' : 'volume-high'}
+            size={24}
+            color={isAudioMuted ? 'rgba(255,255,255,0.5)' : colors.text}
+          />
+        </TouchableOpacity>
       </View>
 
       {/* Progress Bar */}
