@@ -73,10 +73,23 @@ export default function TimerScreen() {
   const prevTimeRef = useRef<number | null>(null);
 
   // Keep screen awake
+  const keepAwakeActivated = useRef(false);
   useEffect(() => {
-    activateKeepAwakeAsync();
+    activateKeepAwakeAsync()
+      .then(() => {
+        keepAwakeActivated.current = true;
+      })
+      .catch(() => {
+        // Silently fail on web or unsupported platforms
+      });
     return () => {
-      deactivateKeepAwake();
+      if (keepAwakeActivated.current) {
+        try {
+          deactivateKeepAwake();
+        } catch {
+          // Silently fail
+        }
+      }
     };
   }, []);
 
@@ -263,16 +276,32 @@ export default function TimerScreen() {
       ? (upcomingItem ? `Next: ${upcomingItem.name}` : 'Final stretch!')
       : `First up: ${items[0]?.name}`;
 
+    // Solid colors: green for work ending, blue for rest ending, dark for initial
+    // Work ending = green (timerActive), Rest ending = blue (timerRest)
+    const countdownBackgroundColor = isEndingCountdown
+      ? (isRest ? colors.timerRest : colors.timerActive)
+      : colors.background;
+
+    // White text on colored backgrounds for contrast, primary on dark initial screen
+    const countdownNumberColor = isEndingCountdown ? colors.text : colors.primary;
+    const countdownTextColor = isEndingCountdown ? colors.text : colors.textSecondary;
+
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.container, { backgroundColor: countdownBackgroundColor }]}>
         <View style={styles.countdownContainer}>
-          <Text style={styles.getReady}>{headerText}</Text>
+          <Text style={[styles.getReady, { color: countdownTextColor }]}>{headerText}</Text>
           <Animated.Text
-            style={[styles.countdownNumber, { transform: [{ scale: pulseAnim }] }]}
+            style={[
+              styles.countdownNumber,
+              {
+                transform: [{ scale: pulseAnim }],
+                color: countdownNumberColor,
+              },
+            ]}
           >
             {displayValue}
           </Animated.Text>
-          <Text style={styles.firstExercise}>{subText}</Text>
+          <Text style={[styles.firstExercise, { color: countdownTextColor }]}>{subText}</Text>
         </View>
       </View>
     );
@@ -570,7 +599,7 @@ const styles = StyleSheet.create({
   countdownNumber: {
     fontSize: 120,
     fontWeight: typography.bold,
-    color: colors.primary,
+    color: colors.text, // Default, overridden dynamically during countdown
   },
   firstExercise: {
     fontSize: typography.lg,
