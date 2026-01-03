@@ -6,14 +6,29 @@ const config = getDefaultConfig(__dirname);
 // Add wav files to asset extensions for audio bundling
 config.resolver.assetExts.push('wav');
 
-// Provide a web-specific mock for react-native-get-random-values
-// (it uses import.meta which doesn't work in Metro web bundle)
+// Web-specific module resolutions for packages using import.meta (unsupported in Metro web bundle)
 config.resolver.resolveRequest = (context, moduleName, platform) => {
-  if (platform === 'web' && moduleName === 'react-native-get-random-values') {
-    return {
-      filePath: path.resolve(__dirname, 'src/utils/polyfills/get-random-values.web.js'),
-      type: 'sourceFile',
-    };
+  if (platform === 'web') {
+    // react-native-get-random-values uses import.meta
+    if (moduleName === 'react-native-get-random-values') {
+      return {
+        filePath: path.resolve(__dirname, 'src/utils/polyfills/get-random-values.web.js'),
+        type: 'sourceFile',
+      };
+    }
+    // zustand ESM uses import.meta.env - force CommonJS version
+    if (moduleName === 'zustand') {
+      return {
+        filePath: path.resolve(__dirname, 'node_modules/zustand/index.js'),
+        type: 'sourceFile',
+      };
+    }
+    if (moduleName === 'zustand/middleware') {
+      return {
+        filePath: path.resolve(__dirname, 'node_modules/zustand/middleware.js'),
+        type: 'sourceFile',
+      };
+    }
   }
   return context.resolveRequest(context, moduleName, platform);
 };
