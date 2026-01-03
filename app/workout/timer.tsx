@@ -103,10 +103,19 @@ export default function TimerScreen() {
     };
   }, [status, countdownValue]);
 
-  // Main timer
+  // Main timer - plays countdown sounds BEFORE ticking to eliminate delay
   useEffect(() => {
     if (status === 'running') {
       timerRef.current = setInterval(() => {
+        const state = useTimerStore.getState();
+        const currentTime = state.timeRemaining;
+
+        // Play countdown sound BEFORE tick so it's synchronized with visual
+        // If currentTime is 4, after tick it becomes 3, so play "3" now
+        if (currentTime >= 2 && currentTime <= 4) {
+          soundManager.playCountdownNumber(currentTime - 1);
+        }
+
         tick();
       }, 1000);
     }
@@ -116,7 +125,7 @@ export default function TimerScreen() {
         clearInterval(timerRef.current);
       }
     };
-  }, [status]);
+  }, [status, tick]);
 
   // Halfway warning tone (work only, not rests)
   // Only play if the midpoint is > 3 to avoid overlap with the ending countdown
@@ -129,12 +138,18 @@ export default function TimerScreen() {
     }
   }, [timeRemaining, status, isRest, currentItem]);
 
-  // Countdown sounds during last 3 seconds of each item
+  // Play countdown sound immediately when an item STARTS at 3 seconds or less
+  // (handles items with short durations, e.g., 3-second rests)
+  const prevItemIndexRef = useRef(currentItemIndex);
   useEffect(() => {
-    if (status === 'running' && timeRemaining <= 3 && timeRemaining >= 1) {
-      soundManager.playCountdownNumber(timeRemaining);
+    if (status === 'running' && prevItemIndexRef.current !== currentItemIndex) {
+      // Item just changed - if it starts at <=3, play the sound immediately
+      if (timeRemaining <= 3 && timeRemaining >= 1) {
+        soundManager.playCountdownNumber(timeRemaining);
+      }
     }
-  }, [timeRemaining, status]);
+    prevItemIndexRef.current = currentItemIndex;
+  }, [currentItemIndex, timeRemaining, status]);
 
   // GO sound when an item completes naturally
   useEffect(() => {

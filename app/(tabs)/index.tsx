@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, Chip, Input } from '@/components/common';
 import { CircuitLogo } from '@/components/CircuitLogo';
+import { GeneratingWorkoutModal } from '@/components/GeneratingWorkoutModal';
 import { CustomInstructionsHistoryModal } from '@/components/home/CustomInstructionsHistoryModal';
 import { colors, spacing, typography, borderRadius } from '@/theme';
 import { DURATION_OPTIONS, WARMUP_COOLDOWN_THRESHOLD } from '@/utils/constants';
@@ -399,6 +400,9 @@ export default function HomeScreen() {
         onSelect={setCustomInstructions}
         onClear={clearCustomInstructions}
       />
+
+      {/* Generating Workout Modal */}
+      <GeneratingWorkoutModal visible={isGenerating} />
     </KeyboardAvoidingView>
   );
 }

@@ -28,7 +28,10 @@
       "Bash(tasklist:*)",
       "Bash(npm install)",
       "Bash(npm install:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(del \"C:\\\\Users\\\\sethc\\\\dev\\\\llm-wod\\\\src\\\\utils\\\\polyfills\\\\worklets.web.js\")",
+      "Bash(del \"C:\\\\Users\\\\sethc\\\\dev\\\\llm-wod\\\\src\\\\utils\\\\polyfills\\\\validate-worklets-version.web.js\")",
+      "Bash(timeout:*)"
     ]
   }
 }

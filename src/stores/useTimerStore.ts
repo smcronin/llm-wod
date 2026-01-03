@@ -12,6 +12,7 @@ interface TimerState {
   session: WorkoutSession | null;
   countdownValue: number;
   showCountdown: boolean;
+  justCompletedItem: boolean; // Flag to trigger GO sound when item completes
 
   initializeTimer: (items: TimerItem[], session: WorkoutSession) => void;
   startCountdown: () => void;
@@ -27,6 +28,7 @@ interface TimerState {
   goToPrevious: () => void;
   setCountdownValue: (value: number) => void;
   setShowCountdown: (show: boolean) => void;
+  clearJustCompletedItem: () => void;
   reset: () => void;
 }
 
@@ -39,6 +41,7 @@ export const useTimerStore = create<TimerState>((set, get) => ({
   session: null,
   countdownValue: 3,
   showCountdown: false,
+  justCompletedItem: false,
 
   initializeTimer: (items, session) => {
     set({
@@ -103,6 +106,8 @@ export const useTimerStore = create<TimerState>((set, get) => ({
         totalElapsed: totalElapsed + 1,
       });
     } else {
+      // Set flag to trigger GO sound before moving to next item
+      set({ justCompletedItem: true });
       get().moveToNextItem();
     }
   },
@@ -130,11 +135,9 @@ export const useTimerStore = create<TimerState>((set, get) => ({
           : null,
       });
     } else {
-      // Start transition countdown before next item
+      // Go directly to next item (countdown happens during last 3 seconds of each item)
       set({
-        status: 'transition',
-        showCountdown: true,
-        countdownValue: 3,
+        status: 'running',
         currentItemIndex: nextIndex,
         timeRemaining: items[nextIndex].duration,
         totalElapsed: totalElapsed + 1,
@@ -179,6 +182,7 @@ export const useTimerStore = create<TimerState>((set, get) => ({
 
   setCountdownValue: (value) => set({ countdownValue: value }),
   setShowCountdown: (show) => set({ showCountdown: show }),
+  clearJustCompletedItem: () => set({ justCompletedItem: false }),
 
   reset: () =>
     set({
@@ -190,5 +194,6 @@ export const useTimerStore = create<TimerState>((set, get) => ({
       session: null,
       countdownValue: 3,
       showCountdown: false,
+      justCompletedItem: false,
     }),
 }));
