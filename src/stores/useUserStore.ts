@@ -6,6 +6,7 @@ import { UserProfile, EquipmentSet } from '@/types/workout';
 interface UserState {
   profile: UserProfile | null;
   isLoading: boolean;
+  savedCustomInstructions: string[];
   setProfile: (profile: UserProfile) => void;
   updateProfile: (updates: Partial<UserProfile>) => void;
   addEquipmentSet: (set: EquipmentSet) => void;
@@ -14,6 +15,8 @@ interface UserState {
   setDefaultEquipmentSet: (id: string) => void;
   completeOnboarding: () => void;
   resetOnboarding: () => void;
+  addCustomInstruction: (instruction: string) => void;
+  clearCustomInstructions: () => void;
 }
 
 export const useUserStore = create<UserState>()(
@@ -21,6 +24,7 @@ export const useUserStore = create<UserState>()(
     (set) => ({
       profile: null,
       isLoading: false,
+      savedCustomInstructions: [],
 
       setProfile: (profile) => set({ profile }),
 
@@ -87,6 +91,21 @@ export const useUserStore = create<UserState>()(
             ? { ...state.profile, hasCompletedOnboarding: false }
             : null,
         })),
+
+      addCustomInstruction: (instruction) =>
+        set((state) => {
+          const trimmed = instruction.trim();
+          // Don't save empty or duplicate instructions
+          if (!trimmed || state.savedCustomInstructions.includes(trimmed)) {
+            return state;
+          }
+          // Add to beginning of array (most recent first), limit to 20
+          return {
+            savedCustomInstructions: [trimmed, ...state.savedCustomInstructions].slice(0, 20),
+          };
+        }),
+
+      clearCustomInstructions: () => set({ savedCustomInstructions: [] }),
     }),
     {
       name: 'user-storage',

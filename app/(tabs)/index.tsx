@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, Chip, Input } from '@/components/common';
 import { CircuitLogo } from '@/components/CircuitLogo';
+import { CustomInstructionsHistoryModal } from '@/components/home/CustomInstructionsHistoryModal';
 import { colors, spacing, typography, borderRadius } from '@/theme';
 import { DURATION_OPTIONS, WARMUP_COOLDOWN_THRESHOLD } from '@/utils/constants';
 import { useUserStore, useWorkoutStore, useHistoryStore } from '@/stores';
@@ -28,6 +29,9 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
 
   const profile = useUserStore((state) => state.profile);
+  const savedCustomInstructions = useUserStore((state) => state.savedCustomInstructions);
+  const addCustomInstruction = useUserStore((state) => state.addCustomInstruction);
+  const clearCustomInstructions = useUserStore((state) => state.clearCustomInstructions);
   const {
     isGenerating,
     setIsGenerating,
@@ -54,6 +58,7 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [showCustomDuration, setShowCustomDuration] = useState(false);
   const [customDurationInput, setCustomDurationInput] = useState('');
+  const [showInstructionsHistory, setShowInstructionsHistory] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
   // Helper to update warmup/cooldown defaults based on duration
@@ -111,6 +116,11 @@ export default function HomeScreen() {
       });
 
       const flattened = flattenWorkout(workout);
+
+      // Save custom instructions to history (if provided)
+      if (customInstructions) {
+        addCustomInstruction(customInstructions);
+      }
 
       setCurrentWorkout(workout);
       setFlattenedWorkout(flattened);
@@ -286,8 +296,25 @@ export default function HomeScreen() {
         <Card style={styles.section}>
           <View style={styles.sectionHeader}>
             <Ionicons name="chatbubble-outline" size={20} color={colors.primary} />
-            <Text style={styles.sectionTitle}>Custom Instructions</Text>
-            <Text style={styles.optionalLabel}>(Optional)</Text>
+            <Text style={[styles.sectionTitle, { flex: 1 }]}>Custom Instructions</Text>
+            <View style={styles.instructionsActions}>
+              {customInstructions ? (
+                <TouchableOpacity
+                  style={styles.instructionsActionButton}
+                  onPress={() => setCustomInstructions('')}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Ionicons name="close-circle" size={20} color={colors.textMuted} />
+                </TouchableOpacity>
+              ) : null}
+              <TouchableOpacity
+                style={styles.instructionsActionButton}
+                onPress={() => setShowInstructionsHistory(true)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="time-outline" size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
           </View>
           <Input
             placeholder="e.g., Focus on upper body, include pull-ups, no jumping..."
@@ -363,6 +390,15 @@ export default function HomeScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Custom Instructions History Modal */}
+      <CustomInstructionsHistoryModal
+        visible={showInstructionsHistory}
+        onClose={() => setShowInstructionsHistory(false)}
+        instructions={savedCustomInstructions}
+        onSelect={setCustomInstructions}
+        onClear={clearCustomInstructions}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -420,7 +456,15 @@ const styles = StyleSheet.create({
   optionalLabel: {
     fontSize: typography.sm,
     color: colors.textMuted,
-    marginLeft: 'auto',
+    flex: 1,
+  },
+  instructionsActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  instructionsActionButton: {
+    padding: spacing.xs,
   },
   chipRow: {
     flexDirection: 'row',
