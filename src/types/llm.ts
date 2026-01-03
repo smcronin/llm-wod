@@ -22,6 +22,26 @@ export interface SummarizedWorkoutHistory {
 }
 
 // ============================================
+// MANUAL WORKOUT METADATA
+// ============================================
+
+export interface ManualWorkoutInput {
+  title: string;
+  description: string;
+  durationMinutes: number;
+  userWeight?: number;
+  userAge?: number;
+}
+
+export interface ManualWorkoutMetadataResponse {
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  estimatedCalories: number;
+  calorieRange: { low: number; high: number };
+  focusAreas: string[];
+  muscleGroupsTargeted: string[];
+}
+
+// ============================================
 // LLM RESPONSE SCHEMA
 // ============================================
 

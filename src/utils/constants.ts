@@ -120,3 +120,44 @@ export const DIFFICULTY_LABELS = {
   intermediate: 'Intermediate',
   advanced: 'Advanced',
 };
+
+// Focus areas for manual workout entry editing
+export const FOCUS_AREAS = [
+  'strength',
+  'cardio',
+  'flexibility',
+  'core',
+  'upper body',
+  'lower body',
+  'full body',
+  'HIIT',
+  'endurance',
+  'balance',
+  'mobility',
+] as const;
+
+// Muscle groups for manual workout entry editing
+export const MUSCLE_GROUPS = [
+  'chest',
+  'back',
+  'shoulders',
+  'biceps',
+  'triceps',
+  'core',
+  'quads',
+  'hamstrings',
+  'glutes',
+  'calves',
+  'forearms',
+  'lats',
+] as const;
+
+// Duration options for manual workout entry
+export const MANUAL_DURATION_OPTIONS = [
+  { value: 15, label: '15 min' },
+  { value: 30, label: '30 min' },
+  { value: 45, label: '45 min' },
+  { value: 60, label: '60 min' },
+  { value: 90, label: '90 min' },
+  { value: 120, label: '2 hr' },
+] as const;

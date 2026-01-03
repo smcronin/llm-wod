@@ -1,9 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Card, Chip } from '@/components/common';
+import { ManualWorkoutModal } from '@/components/history';
 import { colors, spacing, typography, borderRadius } from '@/theme';
 import { useHistoryStore, useWorkoutStore } from '@/stores';
 import { WorkoutSession } from '@/types/workout';
@@ -23,6 +24,7 @@ export default function HistoryScreen() {
   const history = useHistoryStore((state) => state.history);
   const removeSession = useHistoryStore((state) => state.removeSession);
   const { setCurrentWorkout, setFlattenedWorkout } = useWorkoutStore();
+  const [showManualModal, setShowManualModal] = useState(false);
 
   const handleReplay = (session: WorkoutSession) => {
     const workout = session.workout;
@@ -73,6 +75,7 @@ export default function HistoryScreen() {
 
   const renderSession = ({ item }: { item: WorkoutSession }) => {
     const isCompleted = item.status === 'completed';
+    const isManual = item.workout.isManual === true;
     const difficultyColor = DIFFICULTY_COLORS[item.workout.difficulty];
     const hasNotes = item.feedback?.notes && item.feedback.notes.length > 0;
 
@@ -80,7 +83,14 @@ export default function HistoryScreen() {
       <Card style={styles.sessionCard}>
         <View style={styles.sessionHeader}>
           <View style={styles.sessionTitle}>
-            <Text style={styles.workoutName}>{item.workout.name}</Text>
+            <View style={styles.titleRow}>
+              <Text style={styles.workoutName}>{item.workout.name}</Text>
+              {isManual && (
+                <View style={styles.manualBadge}>
+                  <Text style={styles.manualBadgeText}>Manual</Text>
+                </View>
+              )}
+            </View>
             <View style={styles.sessionMeta}>
               <Text style={styles.sessionDate}>
                 {formatDate(item.completedAt || item.startedAt || item.workout.createdAt)}
@@ -95,13 +105,15 @@ export default function HistoryScreen() {
             </View>
           </View>
           <View style={styles.headerActions}>
-            <TouchableOpacity
-              style={styles.replayButton}
-              onPress={() => handleReplay(item)}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="refresh" size={18} color={colors.primary} />
-            </TouchableOpacity>
+            {!isManual && (
+              <TouchableOpacity
+                style={styles.replayButton}
+                onPress={() => handleReplay(item)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="refresh" size={18} color={colors.primary} />
+              </TouchableOpacity>
+            )}
             <TouchableOpacity
               style={styles.deleteButton}
               onPress={() => handleDeleteSession(item)}
@@ -189,7 +201,16 @@ export default function HistoryScreen() {
 
   const ListHeader = () => (
     <View>
-      <Text style={styles.title}>History</Text>
+      <View style={styles.headerRow}>
+        <Text style={styles.title}>History</Text>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => setShowManualModal(true)}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="add-circle" size={28} color={colors.primary} />
+        </TouchableOpacity>
+      </View>
 
       <View style={styles.statsGrid}>
         <View style={styles.statCard}>
@@ -235,6 +256,10 @@ export default function HistoryScreen() {
         ListEmptyComponent={ListEmpty}
         showsVerticalScrollIndicator={false}
       />
+      <ManualWorkoutModal
+        visible={showManualModal}
+        onClose={() => setShowManualModal(false)}
+      />
     </View>
   );
 }
@@ -252,7 +277,32 @@ const styles = StyleSheet.create({
     fontSize: typography['2xl'],
     fontWeight: typography.bold,
     color: colors.text,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: spacing.lg,
+  },
+  addButton: {
+    padding: spacing.xs,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: 4,
+  },
+  manualBadge: {
+    backgroundColor: colors.primary + '20',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: borderRadius.sm,
+  },
+  manualBadgeText: {
+    fontSize: typography.xs,
+    color: colors.primary,
+    fontWeight: typography.medium,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -297,7 +347,6 @@ const styles = StyleSheet.create({
     fontSize: typography.base,
     fontWeight: typography.semibold,
     color: colors.text,
-    marginBottom: 4,
   },
   sessionMeta: {
     flexDirection: 'row',

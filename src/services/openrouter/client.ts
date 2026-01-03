@@ -1,7 +1,7 @@
 const OPENROUTER_API_KEY = process.env.EXPO_PUBLIC_OPENROUTER_API_KEY;
-import { LLMWorkoutResponse } from '@/types/llm';
+import { LLMWorkoutResponse, ManualWorkoutMetadataResponse } from '@/types/llm';
 import { GeneratedWorkout, Exercise, Circuit, WarmUpSection, CoolDownSection } from '@/types/workout';
-import { buildPrompt, getSystemPrompt, GenerationContext } from './prompts';
+import { buildPrompt, getSystemPrompt, GenerationContext, getManualWorkoutSystemPrompt, buildManualWorkoutPrompt, ManualWorkoutPromptInput } from './prompts';
 import { uuid } from '@/utils/uuid';
 
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
@@ -200,3 +200,87 @@ function transformToGeneratedWorkout(
 }
 
 export { GenerationContext };
+
+// ============================================
+// MANUAL WORKOUT METADATA GENERATION
+// ============================================
+
+export async function generateManualWorkoutMetadata(
+  input: ManualWorkoutPromptInput
+): Promise<ManualWorkoutMetadataResponse> {
+  const prompt = buildManualWorkoutPrompt(input);
+
+  const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': 'https://circuit.app',
+      'X-Title': 'Circuit Workout Generator',
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      messages: [
+        { role: 'system', content: getManualWorkoutSystemPrompt() },
+        { role: 'user', content: prompt },
+      ],
+      response_format: { type: 'json_object' },
+      temperature: 0.5, // Lower temperature for more consistent metadata
+      max_tokens: 1024,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(`OpenRouter API error: ${error.message || response.statusText}`);
+  }
+
+  const data = await response.json();
+  const content = data.choices[0]?.message?.content;
+
+  if (!content) {
+    throw new Error('No content in response');
+  }
+
+  return parseManualWorkoutResponse(content, input.durationMinutes);
+}
+
+function parseManualWorkoutResponse(
+  content: string,
+  durationMinutes: number
+): ManualWorkoutMetadataResponse {
+  let parsed: ManualWorkoutMetadataResponse;
+
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    // Try to extract JSON from markdown code blocks
+    const jsonMatch = content.match(/```json\n?([\s\S]*?)\n?```/);
+    if (jsonMatch) {
+      parsed = JSON.parse(jsonMatch[1]);
+    } else {
+      // Try to find JSON object in the response
+      const jsonStart = content.indexOf('{');
+      const jsonEnd = content.lastIndexOf('}');
+      if (jsonStart !== -1 && jsonEnd !== -1) {
+        parsed = JSON.parse(content.slice(jsonStart, jsonEnd + 1));
+      } else {
+        throw new Error('Invalid JSON response from LLM');
+      }
+    }
+  }
+
+  // Provide fallback values if LLM response is incomplete
+  const fallbackCalories = Math.round(durationMinutes * 7); // 7 cal/min average
+
+  return {
+    difficulty: parsed.difficulty || 'intermediate',
+    estimatedCalories: parsed.estimatedCalories || fallbackCalories,
+    calorieRange: parsed.calorieRange || {
+      low: Math.round(durationMinutes * 5),
+      high: Math.round(durationMinutes * 10),
+    },
+    focusAreas: parsed.focusAreas || ['full body'],
+    muscleGroupsTargeted: parsed.muscleGroupsTargeted || [],
+  };
+}

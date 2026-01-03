@@ -66,6 +66,7 @@ export interface GeneratedWorkout {
   calorieRange: { low: number; high: number };
   focusAreas: string[];
   muscleGroupsTargeted: string[];
+  isManual?: boolean; // True for manually logged workouts (no exercises, just metadata)
 }
 
 // ============================================

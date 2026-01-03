@@ -239,3 +239,61 @@ ${timingRules}`;
 
   return prompt;
 }
+
+// ============================================
+// MANUAL WORKOUT METADATA PROMPTS
+// ============================================
+
+export function getManualWorkoutSystemPrompt(): string {
+  return `You are a fitness expert that analyzes workout descriptions to estimate metadata.
+Your task is to analyze a user's description of a workout they completed and provide:
+1. Difficulty level based on the described intensity
+2. Calorie estimates based on duration and activity type
+3. Focus areas (strength, cardio, flexibility, core, etc.)
+4. Muscle groups targeted
+
+IMPORTANT: You must respond with valid JSON matching the exact schema provided.
+
+Calorie estimation guidelines (adjust based on user weight if provided):
+- Light activity (walking, stretching, yoga): 3-5 cal/min
+- Moderate activity (weight training, cycling, swimming laps): 5-8 cal/min
+- High intensity (HIIT, running, intense cardio, climbing): 8-12 cal/min
+- Very high intensity (sprints, heavy lifting, competition): 10-15 cal/min
+
+Difficulty assessment:
+- Beginner: Low intensity, basic movements, plenty of rest
+- Intermediate: Moderate intensity, some challenging elements
+- Advanced: High intensity, complex movements, demanding duration
+
+Be generous with muscle group detection - if an activity could engage a muscle group, include it.`;
+}
+
+export interface ManualWorkoutPromptInput {
+  title: string;
+  description: string;
+  durationMinutes: number;
+  userWeight?: number;
+  userAge?: number;
+}
+
+export function buildManualWorkoutPrompt(input: ManualWorkoutPromptInput): string {
+  return `Analyze this workout and provide metadata:
+
+WORKOUT DETAILS:
+- Title: ${input.title}
+- Description: ${input.description}
+- Duration: ${input.durationMinutes} minutes
+${input.userWeight ? `- User Weight: ${input.userWeight} lbs` : ''}
+${input.userAge ? `- User Age: ${input.userAge}` : ''}
+
+Return a JSON object with this exact structure:
+{
+  "difficulty": "beginner" | "intermediate" | "advanced",
+  "estimatedCalories": number,
+  "calorieRange": { "low": number, "high": number },
+  "focusAreas": ["array of focus areas like: strength, cardio, flexibility, core, upper body, lower body, full body, HIIT, endurance, balance, mobility"],
+  "muscleGroupsTargeted": ["array of muscle groups like: chest, back, shoulders, biceps, triceps, core, quads, hamstrings, glutes, calves, forearms, hip flexors, lats, obliques"]
+}
+
+Be thorough in identifying all relevant focus areas and muscle groups based on the description.`;
+}
